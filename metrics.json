@@ -1,31 +1,32 @@
-[
-  {"rasp02/mem": "sys.vmem.percent"},
-  {"rasp02/cpu": "sys.cpu.percent"},
-  {"rasp02/net-wlan0": "sys.net.percent"},
-  {"rasp06/temp": "temp"},
-  {"rasp05/airquality": "airqualtiy"},
-  {""}
-airquality	float(0, max)	 	il033	um2	iotlab
-accel.x.current	float(-34.3, 34.3)	 	il033	um2	iotlab	m/s²
-accel.y.current	float(-34.3, 34.3)	 	il033	um2	iotlab	m/s²
-extrusion	float(0, 10000)	 	il030	um2	iotlab	mm³
-head.pos.z	float(0, max.size.z)	 	il030	um2	iotlab	mm
-head.pos.x	float(0, max.size.x)	 	il030	um2	iotlab	mm
-head.pos.y	float(0, max.size.y)	 	il030	um2	iotlab	mm
-temp.air.current	float(-55, 125)	 	arduino1	 	iotlab	°C
-temp.bed.current	float(-200, 850)	 	il030	um2	iotlab	°C
-temp.bed.target	int(0, 185)	 	il030	um2	iotlab	°C
-temp.nozzle.current	float(-200, 850)	 	il030	um2	iotlab	°C
-temp.nozzle.target	int(0, 225)	 	il030	um2	iotlab	°C
+{
+  "metrics":
+  [
+    {"rasp02/mem": "sys.vmem.percent"},
+    {"rasp02/cpu": "sys.cpu.percent"},
+    {"rasp02/net-wlan0": "sys.net.percent"},
+    {"rasp06/temp": "temp.air.current"},
+    {"rasp05/airquality": "airqualtiy"},
+    {"cam1/motioneye": "motioneye1"},
+    {"cam2/motioneye": "motioneye2"},
+    {"rasp02/um2-posX": "head.pos.x"},
+    {"rasp02/um2-posY": "head.pos.y"},
+    {"rasp02/um2-posZ": "head.pos.z"},
+    {"rasp02/um2-posE": "extrusion"},
+    {"rasp02/um2-targetBed": "temp.bed.target"},
+    {"rasp02/um2-targetNozzle": "temp.nozzle.target"},
+    {"rasp02/um2-tempBed": "temp.bed.current"},
+    {"rasp02/um2-tempNozzle": "temp.nozzle.current"},
+    {"rasp05/Printing": "printing"},
+    {"rasp05/filaDistance": "fila.distance"},
+    {"rasp05/filaConsumption": "fila.consumption"},
+    {"rasp05/filaRate": "fila.rate"},
+    {"rasp05/Retraction": "fila.retraction"},
+    {"rasp05/Skid": "fila.skid"},
+    {"rasp05/SkidCount": "fila.skidcount"},
+    {"rasp05/SkidRate": "fila.skidrate"},
 
+    {"rasp05/accelX": "accel.x.current"},
+    {"rasp05/accelY": "accel.y.current"}
 
-fila.distance	float(0, max.filament)	s	il033	um2	iotlab	mm
-fila.retraction	event, timestamp	s	il033	um2	iotlab	annotation
-fila.skid	event, timestamp	s	il033	um2	iotlab	annotation
-fila.in	bool	s	il033
-
-um2
-	iotlab	bool
-fila.feed	annotation	s	il033	um2	iotlab	annotation
-fila.rate	float(0, max.extrusion)	s	il033	um2	iotlab	mm³/s
-fila.skidrate	float(0, ∞)	s	il033	um2	iotlab	1/m
+  ]
+}
