@@ -5,7 +5,7 @@
     {"rasp02/cpu": "sys.cpu.percent"},
     {"rasp02/net-wlan0": "sys.net.percent"},
     {"rasp06/temp": "temp.air.current"},
-    {"rasp05/airquality": "airqualtiy"},
+    {"rasp05/airquality": "airquality"},
     {"cam1/motioneye": "motioneye1"},
     {"cam2/motioneye": "motioneye2"},
     {"rasp02/um2-posX": "head.pos.x"},
@@ -26,7 +26,11 @@
     {"rasp05/SkidRate": "fila.skidrate"},
 
     {"rasp05/accelX": "accel.x.current"},
-    {"rasp05/accelY": "accel.y.current"}
+    {"rasp05/accelY": "accel.y.current"},
 
+    {"rasp05/Feed": "fila.feed"},
+    {"motioneye1": "cam.motioneye1"},
+    {"motioneye2": "cam.motioneye2"}
   ]
 }
+
