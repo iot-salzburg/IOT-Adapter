@@ -8,3 +8,8 @@ sudo apt-get install python-pandas
 sudo pip install -r requirements.txt
 ```
 
+## Usage with logging
+
+```
+python /path/to/IOT-Adapter/adapter.py >> /path/to/IOT-Adapter/logs/logfile.log
+```

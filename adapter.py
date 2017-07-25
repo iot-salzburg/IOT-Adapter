@@ -1,31 +1,37 @@
 #!/usr/bin/env python3
 #  -*- coding: utf-8 -*-
-
-
 """adapter.py: This module fetches heterogenious data from the Iot-Lab's MQTT_BORKER
 (3D printer data previously bundled on node-red), converts it into the canonical dataformat as
-specified in SensorThings and sends it in the Kafka message Bus."""
-
-__author__ = "Salzburg Research"
-__version__ = "1.1"
-__email__ = "christoph.schranz@salzburgresearch.at"
-__status__ = "Development"
+specified in SensorThings and sends it in the Kafka message Bus.
+If MQTT doesn't work, make sure that
+1) you are listening to 0.0.0.0:1883 (cmd: netstat -a)
+2) mosquitto is running (cmd path/to/mosquitto mosquitto)
+3) you can listen on chrome's MQTT Lens."""
 
 import time
 import re
 import sys
+import os
 from datetime import datetime
 import json
 import threading
 import logging
+
 import pytz
 from kafka import KafkaProducer
 import paho.mqtt.client as mqtt
 
+__author__ = "Salzburg Research"
+__version__ = "1.1"
+__date__ = "20 Juli 2017"
+__email__ = "christoph.schranz@salzburgresearch.at"
+__status__ = "Development"
+
 MQTT_BROKER = "il050.salzburgresearch.at"
 KAFKA_TOPIC_OUT = "PrinterData"
 BOOTSTRAP_SERVERS = ['il061:9092', 'il062:9092', 'il063:9092']
-METRIC_MAPPING = "metrics.json"
+dir_path = os.path.dirname(os.path.realpath(__file__))
+METRIC_MAPPING = "{}{}metrics.json".format(dir_path, os.sep)
 
 with open(METRIC_MAPPING) as metric_file:
     metric_dict = json.load(metric_file)
@@ -37,7 +43,11 @@ producer = KafkaProducer(bootstrap_servers=BOOTSTRAP_SERVERS,
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-keylist = list()
+ch = logging.StreamHandler(sys.stdout)
+ch.setLevel(logging.DEBUG)
+formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+ch.setFormatter(formatter)
+logger.addHandler(ch)
 
 
 def forward_message():
@@ -59,19 +69,15 @@ def on_message(client, userdata, msg):
     datapoint = fetch_mqtt_msg(msg)
     if datapoint is None:
         return None
-    logger.info("New message received: {} {}".format(msg.topic, str(msg.payload)))
     # print(msg.payload)
     datapoint["ts"] = translate_timestamp(datapoint["ts"])
 
     datapoint = transform_metric(datapoint)
-    print("\t%-25s %-40s%-10s" % (datapoint["quantity"], datapoint["ts"], datapoint["value"]))
-    if datapoint["quantity"] not in keylist:
-        keylist.append(datapoint["quantity"])
-        # print("\tDatapoint: {}".format(datapoint))
 
     message = convert_to_sensorthings(datapoint)
 
     publish_message(message)
+    logger.debug("\tSent:\t%-25s %-40s%-10s" % (datapoint["quantity"], datapoint["ts"], datapoint["value"]))
     time.sleep(0)
 
 
@@ -82,6 +88,7 @@ def on_connect(client, userdata, flags, rc):
     # Subscribing in on_connect() means that if we lose the connection and
     # reconnect then subscriptions will be renewed.
     client.subscribe("#")
+
 
 def on_disconnect(client, userdata, rc):
     """Reporting if connection to MQTT_BROKER is lost."""
@@ -210,7 +217,7 @@ def transform_metric(datapoint):
     try:
         datapoint["quantity"] = [list(i.values())[0] for i in metric_dict["metrics"]
                                  if list(i.keys())[0] == datapoint["quantity"]][0]
-    except KeyError:
+    except:
         logger.warning("No key found for: {}".format(datapoint))
     return datapoint
 
@@ -245,18 +252,17 @@ def translate_timestamp(ts_in, form="ISO8601"):
     if type(ts_in) in [int, float]:
         ts_len = len(str(int(ts_in)))
         if ts_len in [10, 9]:
-            observation_time = float(ts_in)
+            ts_in = float(ts_in)
         elif ts_len in [13, 12]:
-            observation_time = ts_in/1000.0
+            ts_in = float(ts_in)/1000
         elif ts_len in [16, 15]:
-            observation_time = ts_in/1000.0/1000.0
-    else:
-        logger.warning("Unexpected timestamp format: {} ({})".format(ts_in, type(ts_in)))
-        observation_time = ts_in
+            ts_in = float(ts_in)/1000/1000
+        else:
+            logger.warning("Unexpected timestamp format: {} ({})".format(ts_in, type(ts_in)))
     if form == "ISO8601":
-        return datetime.fromtimestamp(float(observation_time), pytz.UTC).isoformat()
+        return datetime.fromtimestamp(float(ts_in), pytz.UTC).isoformat()
     elif form in ["UNIX", "Unix", "unix"]:
-        return observation_time
+        return ts_in
     else:
         logger.warning("Invalid date format specified: {}".format(form))
 
