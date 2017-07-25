@@ -30,7 +30,10 @@
 
     {"rasp05/Feed": "fila.feed"},
     {"motioneye1": "cam.motioneye1"},
-    {"motioneye2": "cam.motioneye2"}
+    {"motioneye2": "cam.motioneye2"},
+
+    {"rasp05/filaIn": "fila.input"},
+    {"rasp05/UndefState": "fila.undefinedstate"}
   ]
 }
 
