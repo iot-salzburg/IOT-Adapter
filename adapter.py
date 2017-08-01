@@ -39,6 +39,7 @@ with open(METRIC_MAPPING) as metric_file:
 producer = KafkaProducer(bootstrap_servers=BOOTSTRAP_SERVERS,
                          api_version=(0, 9),
                          value_serializer=lambda m: json.dumps(m).encode('ascii'))
+# TODO test compression_type 'gzip'
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
