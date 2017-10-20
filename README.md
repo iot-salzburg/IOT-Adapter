@@ -11,5 +11,5 @@ sudo pip install -r requirements.txt
 ## Usage with logging
 
 ```
-python /path/to/IOT-Adapter/adapter.py >> /path/to/IOT-Adapter/logs/logfile.log
+python3 /path/to/IOT-Adapter/adapter.py >> /path/to/IOT-Adapter/logs/logfile.log
 ```

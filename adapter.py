@@ -1,12 +1,13 @@
 #!/usr/bin/env python3
 #  -*- coding: utf-8 -*-
+
 """adapter.py: This module fetches heterogenious data from the Iot-Lab's MQTT_BORKER
 (3D printer data previously bundled on node-red), converts it into the canonical dataformat as
 specified in SensorThings and sends it in the Kafka message Bus.
 If MQTT doesn't work, make sure that
-1) you are listening to 0.0.0.0:1883 (cmd: netstat -a)
+1) you are listening on port 1883 (cmd: netstat -a)
 2) mosquitto is running (cmd path/to/mosquitto mosquitto)
-3) you can listen on chrome's MQTT Lens."""
+3) you can listen to the incoming MQTT data on chrome's MQTT Lens."""
 
 import time
 import re
@@ -27,15 +28,21 @@ __date__ = "20 Juli 2017"
 __email__ = "christoph.schranz@salzburgresearch.at"
 __status__ = "Development"
 
+
 MQTT_BROKER = "il050.salzburgresearch.at"
+
 KAFKA_TOPIC_OUT = "PrinterData"
 BOOTSTRAP_SERVERS = ['il061:9092', 'il062:9092', 'il063:9092']
+
+# The mapping between incoming and outgoing metrics is defined by
+# the json file located on:
 dir_path = os.path.dirname(os.path.realpath(__file__))
 METRIC_MAPPING = "{}{}metrics.json".format(dir_path, os.sep)
 
 with open(METRIC_MAPPING) as metric_file:
     metric_dict = json.load(metric_file)
 
+# Define Kafka Producer
 producer = KafkaProducer(bootstrap_servers=BOOTSTRAP_SERVERS,
                          api_version=(0, 9),
                          value_serializer=lambda m: json.dumps(m).encode('ascii'))
@@ -51,8 +58,11 @@ ch.setFormatter(formatter)
 logger.addHandler(ch)
 
 
-def forward_message():
-    """Setting up connection to MQTT_BROKER and wait for messages    """
+def define_mqtt_statemachine():
+    """
+    Setting up MQTT client and define function on mqtt events.
+    :return:
+    """
     # The protocol must be specified in python!
     client = mqtt.Client(protocol=mqtt.MQTTv31)
     client.on_connect = on_connect
@@ -65,17 +75,26 @@ def forward_message():
 
 
 def on_message(client, userdata, msg):
-    """Action on received message.
-    Nothing to return, because message sending is called here."""
-    datapoint = fetch_mqtt_msg(msg)
+    """
+    Action on received message:
+    Raw message will be parsed to the canonical data format specified with SensorThings
+    and published on the Kafka message bus via the kafka producer.
+    Nothing to return, because kafka message sending is called here.
+    :param client: not used, but part of routine.
+    :param userdata: not used, but part of routine.
+    :param msg: Incoming raw MQTT message
+    :return:
+    """
+    datapoint = mqtt_to_sensorthings(msg)
     if datapoint is None:
         return None
-    # print(msg.payload)
-    datapoint["ts"] = translate_timestamp(datapoint["ts"])
+    print(msg.payload)
+
+    datapoint["ts"] = convert_timestamp(datapoint["ts"])
 
     datapoint = transform_metric(datapoint)
 
-    message = convert_to_sensorthings(datapoint)
+    message = create_message(datapoint)
 
     publish_message(message)
     logger.debug("\tSent:\t%-25s %-40s%-10s" % (datapoint["quantity"], datapoint["ts"], datapoint["value"]))
@@ -84,22 +103,22 @@ def on_message(client, userdata, msg):
 
 def on_connect(client, userdata, flags, rc):
     """Report if connection to MQTT_BROKER is established
-    and subscribe to topics."""
-    print("Connected with result code "+str(rc))
+    and subscribe to all topics. MQTT subroutine"""
+    logger.info("Connected with result code "+str(rc))
     # Subscribing in on_connect() means that if we lose the connection and
     # reconnect then subscriptions will be renewed.
     client.subscribe("#")
 
 
 def on_disconnect(client, userdata, rc):
-    """Reporting if connection to MQTT_BROKER is lost."""
-    print("Disconnect, reason: " + str(rc))
-    print("Disconnect, reason: " + str(client))
+    """Reporting if connection to MQTT_BROKER is lost. MQTT subroutine"""
+    logger.warning("Disconnect, reason: " + str(rc))
+    logger.warning("Disconnect, reason: " + str(client))
 
 
-def fetch_mqtt_msg(msg):
+def mqtt_to_sensorthings(msg):
     """
-    Fetching MQTT message from MQTT_BROKER.
+    Parsing MQTT message from raw message object and transform into inte
     :param msg: MQTT message including topic and payload
     :return: datapoint dictionary including quantity (topic), timestamp and value
     """
@@ -210,7 +229,8 @@ def fetch_sensor_data(msg):
 
 def transform_metric(datapoint):
     """
-    Translate the MQTT input topic into the kafka bus quantity name.
+    Translate message metric: the MQTT input topic into the kafka bus quantity name via the
+    metrics mapping json file.
     :param datapoint: dictionary including quantity, timestamp and value
     :return: updated datapoint dictionary including timestamp, value and new quantity
     :rtype: dictionary
@@ -218,33 +238,32 @@ def transform_metric(datapoint):
     try:
         datapoint["quantity"] = [list(i.values())[0] for i in metric_dict["metrics"]
                                  if list(i.keys())[0] == datapoint["quantity"]][0]
-    except:
+    except KeyError:
         logger.warning("No key found for: {}".format(datapoint))
     return datapoint
 
 
-def convert_to_sensorthings(datapoint):
+def create_message(datapoint):
     """
     Convert any datapoint message into the canonical message format
     from i-maintenance's first iteration.
     :param datapoint: dictionary including quantity, timestamp and value
     :return: canonical message format as 4-key dictionary
     """
-    phenomenon_time = translate_timestamp(datapoint["ts"], form="ISO8601")
     message = {
-         'phenomenonTime': phenomenon_time,
+         'phenomenonTime': datapoint["ts"],
          'resultTime': datetime.utcnow().replace(tzinfo=pytz.UTC).isoformat(),
          'result': datapoint["value"],
          'Datastream': {'@iot.id': datapoint["quantity"]}}
     return message
 
 
-def translate_timestamp(ts_in, form="ISO8601"):
+def convert_timestamp(ts_in, form="ISO8601"):
     """Parse any timestamp format into a specific one.
     Keyword arguments:
     :param ts_in: timestamp (string, int or float)
     :param form: timestamp format (string) default: "ISO8601"
-    :return: a conventional timestamp
+    :return: a conventional timestamp of default type ISO8601 e.g. "2017-10-17T11:52:42.123456"
     """
     # Check if the input has already the correct format
     if form == "ISO8601" and type(ts_in) is str and ts_in.count(":") == 3:
@@ -269,13 +288,15 @@ def translate_timestamp(ts_in, form="ISO8601"):
 
 
 def publish_message(message):
-    """Publish the canonical data format (Version: i-maintenance first iteration)
+    """
+    Publish the canonical data format (Version: i-maintenance first iteration)
     to the Kafka Bus.
 
     Keyword argument:
     :param message: dictionary with 4 keywords
     :return: None
     """
+    print(message)
     try:
         producer.send(KAFKA_TOPIC_OUT, message)
     except:
@@ -283,4 +304,4 @@ def publish_message(message):
 
 
 if __name__ == '__main__':
-    forward_message()
+    define_mqtt_statemachine()
