@@ -21,3 +21,8 @@ def deploy():
             '-e "LOG_LEVEL=DEBUG" '
             '--name iot-adatper '
             'i-maintenance/iot-adapter')
+
+
+@task
+def logs():
+    run('docker logs -f iot-adatper')

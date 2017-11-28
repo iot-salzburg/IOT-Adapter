@@ -13,3 +13,9 @@ sudo pip install -r requirements.txt
 ```
 python3 /path/to/IOT-Adapter/adapter.py >> /path/to/IOT-Adapter/logs/logfile.log
 ```
+
+## Docker Deployment
+
+Run ```fab deploy -H user@host``` for deploying it to a specific server (e.g. ```fab deploy -H root@il060```)
+
+Run ```fab logs -H user@host``` to access the log output.
