@@ -15,12 +15,12 @@ import sys
 import os
 from datetime import datetime
 import json
-import threading
 import logging
 
 import pytz
 from kafka import KafkaProducer
 import paho.mqtt.client as mqtt
+from logstash import TCPLogstashHandler
 
 __author__ = "Salzburg Research"
 __version__ = "1.1"
@@ -28,19 +28,21 @@ __date__ = "20 Juli 2017"
 __email__ = "christoph.schranz@salzburgresearch.at"
 __status__ = "Development"
 
-
 MQTT_BROKER = "il050.salzburgresearch.at"
 
-KAFKA_TOPIC_OUT = "PrinterData"
+LOGSTASH_HOST = os.getenv('LOGSTASH_HOST', 'localhost')
+LOGSTASH_PORT = int(os.getenv('LOGSTASH_PORT', '5000'))
+
+KAFKA_TOPIC_OUT = "SensorData"
 BOOTSTRAP_SERVERS = ['il061:9092', 'il062:9092', 'il063:9092']
 
 # The mapping between incoming and outgoing metrics is defined by
 # the json file located on:
 dir_path = os.path.dirname(os.path.realpath(__file__))
-METRIC_MAPPING = "{}{}metrics.json".format(dir_path, os.sep)
+datastream_map = os.path.join(dir_path, "datastreams.json")
 
-with open(METRIC_MAPPING) as metric_file:
-    metric_dict = json.load(metric_file)
+with open(datastream_map) as ds_file:
+    DATASTREAM_MAPPING = json.load(ds_file)
 
 # Define Kafka Producer
 producer = KafkaProducer(bootstrap_servers=BOOTSTRAP_SERVERS,
@@ -48,8 +50,14 @@ producer = KafkaProducer(bootstrap_servers=BOOTSTRAP_SERVERS,
                          value_serializer=lambda m: json.dumps(m).encode('ascii'))
 # TODO test compression_type 'gzip'
 
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
+# setup logging
+logger = logging.getLogger('iot-adapter')
+logger.setLevel(os.getenv('LOG_LEVEL', logging.INFO))
+console_logger = logging.StreamHandler(stream=sys.stdout)
+console_logger.setFormatter(logging.Formatter(logging.BASIC_FORMAT))
+logstash_handler = TCPLogstashHandler(host=LOGSTASH_HOST, port=LOGSTASH_PORT, version=1)
+[logger.addHandler(l) for l in [console_logger, logstash_handler]]
+logger.info('Sending logstash to %s:%d', logstash_handler.host, logstash_handler.port)
 
 ch = logging.StreamHandler(sys.stdout)
 ch.setLevel(logging.DEBUG)
@@ -88,23 +96,23 @@ def on_message(client, userdata, msg):
     datapoint = mqtt_to_sensorthings(msg)
     if datapoint is None:
         return None
-    print(msg.payload)
 
     datapoint["ts"] = convert_timestamp(datapoint["ts"])
 
-    datapoint = transform_metric(datapoint)
+    datapoint = convert_datastream_id(datapoint)
+    if datapoint:
+        message = create_message(datapoint)
 
-    message = create_message(datapoint)
-
-    publish_message(message)
-    logger.debug("\tSent:\t%-25s %-40s%-10s" % (datapoint["quantity"], datapoint["ts"], datapoint["value"]))
-    time.sleep(0)
+        publish_message(message)
+        logger.debug(
+            "\tSent:\t%-25s %-40s%-10s" % (datapoint["quantity"], datapoint["ts"], datapoint["value"]))
+        time.sleep(0)
 
 
 def on_connect(client, userdata, flags, rc):
     """Report if connection to MQTT_BROKER is established
     and subscribe to all topics. MQTT subroutine"""
-    logger.info("Connected with result code "+str(rc))
+    logger.info("Connected with result code " + str(rc))
     # Subscribing in on_connect() means that if we lose the connection and
     # reconnect then subscriptions will be renewed.
     client.subscribe("#")
@@ -130,8 +138,8 @@ def mqtt_to_sensorthings(msg):
         datapoint["value"] = payload
         datapoint["ts"] = datetime.utcnow().replace(tzinfo=pytz.UTC).isoformat()
     elif len(payload.keys()) != 2:
-            # This case happens, if several values are sent in one message (e.g. 4 temps)
-            return None
+        # This case happens, if several values are sent in one message (e.g. 4 temps)
+        return None
     else:
         try:
             datapoint["ts"] = payload["ts"]
@@ -209,7 +217,7 @@ def fetch_sensor_data(msg):
             datapoint["quantity"] = topic_in.replace("'", "").replace('"', '').strip()
 
         else:
-            print("\nFetched undefined input:")
+            logger.warning("\nFetched undefined input:")
             var = str(msg).split('value={')[1].split('}')[0] + ","
             value_in = var.split("data':")[1].split(",")[0]
             datapoint["value"] = float(re.sub('[^.0-9]+', '', value_in))
@@ -219,28 +227,28 @@ def fetch_sensor_data(msg):
             topic_in = str(msg).split('value={')[1].split("topic':")[1].split(",")[0]
             datapoint["quantity"] = topic_in.replace("'", "")
 
-    except:
-        print("FetchingExceptionRaised:\n")
-        print(msg)
+    except Exception as e:
+        logger.error(e)
         sys.exit()
 
     return datapoint
 
 
-def transform_metric(datapoint):
+def convert_datastream_id(datapoint):
     """
     Translate message metric: the MQTT input topic into the kafka bus quantity name via the
     metrics mapping json file.
     :param datapoint: dictionary including quantity, timestamp and value
     :return: updated datapoint dictionary including timestamp, value and new quantity
-    :rtype: dictionary
+    :rtype: dictionary. None if datapoint is ignored.
     """
     try:
-        datapoint["quantity"] = [list(i.values())[0] for i in metric_dict["metrics"]
-                                 if list(i.keys())[0] == datapoint["quantity"]][0]
+        datapoint["quantity"] = DATASTREAM_MAPPING[datapoint["quantity"]]
+        return datapoint
     except KeyError:
-        logger.warning("No key found for: {}".format(datapoint))
-    return datapoint
+        # logger.debug("Ignoring {}".format(datapoint))
+        pass
+    return None
 
 
 def create_message(datapoint):
@@ -251,10 +259,10 @@ def create_message(datapoint):
     :return: canonical message format as 4-key dictionary
     """
     message = {
-         'phenomenonTime': datapoint["ts"],
-         'resultTime': datetime.utcnow().replace(tzinfo=pytz.UTC).isoformat(),
-         'result': datapoint["value"],
-         'Datastream': {'@iot.id': datapoint["quantity"]}}
+        'phenomenonTime': datapoint["ts"],
+        'resultTime': datetime.utcnow().replace(tzinfo=pytz.UTC).isoformat(),
+        'result': datapoint["value"],
+        'Datastream': {'@iot.id': datapoint["quantity"]}}
     return message
 
 
@@ -274,9 +282,9 @@ def convert_timestamp(ts_in, form="ISO8601"):
         if ts_len in [10, 9]:
             ts_in = float(ts_in)
         elif ts_len in [13, 12]:
-            ts_in = float(ts_in)/1000
+            ts_in = float(ts_in) / 1000
         elif ts_len in [16, 15]:
-            ts_in = float(ts_in)/1000/1000
+            ts_in = float(ts_in) / 1000 / 1000
         else:
             logger.warning("Unexpected timestamp format: {} ({})".format(ts_in, type(ts_in)))
     if form == "ISO8601":
@@ -287,6 +295,7 @@ def convert_timestamp(ts_in, form="ISO8601"):
         logger.warning("Invalid date format specified: {}".format(form))
 
 
+# noinspection PyBroadException
 def publish_message(message):
     """
     Publish the canonical data format (Version: i-maintenance first iteration)
@@ -296,11 +305,10 @@ def publish_message(message):
     :param message: dictionary with 4 keywords
     :return: None
     """
-    print(message)
     try:
         producer.send(KAFKA_TOPIC_OUT, message)
     except:
-        logger.warning("Exception while sending: {} \non kafka topic: {}".format(message, KAFKA_TOPIC_OUT))
+        logger.exception("Exception while sending: {} \non kafka topic: {}".format(message, KAFKA_TOPIC_OUT))
 
 
 if __name__ == '__main__':

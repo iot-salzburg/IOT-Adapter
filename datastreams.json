@@ -1,0 +1,11 @@
+{
+    "rasp05/filaDistance": 1,
+    "rasp05/SkidRate": 2,
+    "rasp05/SkidCount": 3,
+    "rasp06/temp": 4,
+    "rasp02/um2-tempBed": 5,
+    "rasp02/um2-tempNozzle": 6,
+    "rasp05/airquality": 7,
+    "rasp02/um2-posZ": 8,
+    "rasp05/filaConsumption": 9
+}

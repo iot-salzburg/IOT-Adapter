@@ -1,3 +1,5 @@
 kafka-python
 paho-mqtt
 pytz
+python-logstash
+Fabric3
