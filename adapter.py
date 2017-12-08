@@ -18,13 +18,14 @@ import json
 import logging
 
 import pytz
-from kafka import KafkaProducer
+# confluent_kafka is based on librdkafka, details in requirements.txt
+from confluent_kafka import Producer, KafkaError
 import paho.mqtt.client as mqtt
 from logstash import TCPLogstashHandler
 
 __author__ = "Salzburg Research"
-__version__ = "1.1"
-__date__ = "20 Juli 2017"
+__version__ = "1.2"
+__date__ = "4 Dezember 2017"
 __email__ = "christoph.schranz@salzburgresearch.at"
 __status__ = "Development"
 
@@ -33,8 +34,11 @@ MQTT_BROKER = "il050.salzburgresearch.at"
 LOGSTASH_HOST = os.getenv('LOGSTASH_HOST', 'localhost')
 LOGSTASH_PORT = int(os.getenv('LOGSTASH_PORT', '5000'))
 
-KAFKA_TOPIC_OUT = "SensorData"
-BOOTSTRAP_SERVERS = ['il061:9092', 'il062:9092', 'il063:9092']
+# kafka parameters
+# topics and servers should be of the form: "topic1,topic2,..."
+KAFKA_TOPIC = "SensorData"
+BOOTSTRAP_SERVERS_default = 'il061,il062,il063'
+KAFKA_GROUP_ID = "db-adapter"
 
 # The mapping between incoming and outgoing metrics is defined by
 # the json file located on:
@@ -45,10 +49,8 @@ with open(datastream_map) as ds_file:
     DATASTREAM_MAPPING = json.load(ds_file)
 
 # Define Kafka Producer
-producer = KafkaProducer(bootstrap_servers=BOOTSTRAP_SERVERS,
-                         api_version=(0, 9),
-                         value_serializer=lambda m: json.dumps(m).encode('ascii'))
-# TODO test compression_type 'gzip'
+conf = {'bootstrap.servers': BOOTSTRAP_SERVERS_default}
+producer = Producer(**conf)
 
 # setup logging
 logger = logging.getLogger('iot-adapter')
@@ -306,9 +308,9 @@ def publish_message(message):
     :return: None
     """
     try:
-        producer.send(KAFKA_TOPIC_OUT, message)
+        producer.produce(KAFKA_TOPIC, json.dumps(message).encode('ascii'))
     except:
-        logger.exception("Exception while sending: {} \non kafka topic: {}".format(message, KAFKA_TOPIC_OUT))
+        logger.exception("Exception while sending: {} \non kafka topic: {}".format(message, KAFKA_TOPIC))
 
 
 if __name__ == '__main__':

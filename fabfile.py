@@ -5,19 +5,19 @@ env.use_ssh_config = True
 
 @task(default=True)
 def deploy():
-    with cd('/srv/iot-adapter'):
+    with cd('/home/cschranz/iot-adapter'):
         put('*', '.')
-        run('docker build -t i-maintenance/iot-adapter .')
+        run('sudo docker build -t i-maintenance/iot-adapter .')
 
         # stop old container
-        run('docker stop iot-adatper')
-        run('docker rm iot-adatper')
+        run('sudo docker rm -f iot-adatper')
 
         # start new container
-        run('docker run '
+        # sudo docker run -dit --restart always -e "LOGSTASH_HOST=il060" -e "LOG_LEVEL=DEBUG" --name iot-adatper i-maintenance/iot-adapter
+        run('sudo docker run '
             '-dit '
             '--restart always '
-            '-e "LOGSTASH_HOST=il012" '
+            '-e "LOGSTASH_HOST=il060" '
             '-e "LOG_LEVEL=DEBUG" '
             '--name iot-adatper '
             'i-maintenance/iot-adapter')
@@ -25,4 +25,4 @@ def deploy():
 
 @task
 def logs():
-    run('docker logs -f iot-adatper')
+    run('sudo docker logs -f iot-adatper')
