@@ -1,5 +1,5 @@
-FROM python:3.6
-# -onbuild not using onbuild, because changed code results in installation time
+FROM python:3.6-onbuild
+# not using onbuild, because changed code results in installation time
 
 MAINTAINER Johannes Innerbichler <j.innerbichler@gmail.com>
 
