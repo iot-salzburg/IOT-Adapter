@@ -44,9 +44,12 @@ KAFKA_GROUP_ID = "db-adapter"
 # the json file located on:
 dir_path = os.path.dirname(os.path.realpath(__file__))
 datastream_map = os.path.join(dir_path, "datastreams.json")
+blacklist_map = os.path.join(dir_path, "blacklist.json")
 
 with open(datastream_map) as ds_file:
     DATASTREAM_MAPPING = json.load(ds_file)
+with open(blacklist_map) as bl_file:
+    BLACKLIST = json.load(bl_file)
 
 # Define Kafka Producer
 conf = {'bootstrap.servers': BOOTSTRAP_SERVERS_default}
@@ -95,20 +98,22 @@ def on_message(client, userdata, msg):
     :param msg: Incoming raw MQTT message
     :return:
     """
-    datapoint = mqtt_to_sensorthings(msg)
-    if datapoint is None:
-        return None
+    datapoints = mqtt_to_sensorthings(msg)
 
-    datapoint["ts"] = convert_timestamp(datapoint["ts"])
+    for datapoint in list(datapoints):
+        if datapoint is None:
+            return None
 
-    datapoint = convert_datastream_id(datapoint)
-    if datapoint:
-        message = create_message(datapoint)
+        datapoint["ts"] = convert_timestamp(datapoint["ts"])
 
-        publish_message(message)
-        logger.debug(
-            "\tSent:\t%-25s %-40s%-10s" % (datapoint["quantity"], datapoint["ts"], datapoint["value"]))
-        time.sleep(0)
+        datapoint = convert_datastream_id(datapoint)
+        if datapoint:
+            message = create_message(datapoint)
+
+            publish_message(message)
+            logger.debug(
+                "\tSent:\t%-25s %-40s%-10s" % (datapoint["quantity"], datapoint["ts"], datapoint["value"]))
+            time.sleep(0)
 
 
 def on_connect(client, userdata, flags, rc):
@@ -139,101 +144,47 @@ def mqtt_to_sensorthings(msg):
     if type(payload) in [type(0), type(0.0)]:
         datapoint["value"] = payload
         datapoint["ts"] = datetime.utcnow().replace(tzinfo=pytz.UTC).isoformat()
+        datapoints = list([datapoint])
     elif len(payload.keys()) != 2:
-        # This case happens, if several values are sent in one message (e.g. 4 temps)
-        return None
+        # In this case there are multiple keys in one payload,
+        # e.g. {'posE': 2233.81, 'posZ': 0.5, 'ts': 1516356558.740686, 'posX': 94.44, 'posY': 85.1}
+        datapoints = fetch_multiple_data(payload)
+        # return None
     else:
         try:
             datapoint["ts"] = payload["ts"]
             for key in list(payload.keys()):
                 if key != "ts":
                     datapoint["value"] = payload[key]
+            datapoints = list([datapoint])
         except:
             logger.error("Could not parse: {}".format(payload))
             return None
-    return datapoint
+    return datapoints
 
 
-def fetch_sensor_data(msg):
+def fetch_multiple_data(payload):
     """
     Previously used for parsing kafka messages
     :param msg: old kafka message
     :return: datapoint dictionary
     """
-    try:
-        datapoint = dict()
-        structure = str(msg).count("{")
+    datapoints = list()
+    data_of_interest = ["posX", "posY", "posZ", "posE", "targetNozzle", "targetBed", "tempNozzle", "tempBed"]
 
-        if "rasp02/um2-pos" in str(msg):
-            var = str(msg).split('value={')[1].split('}')[0] + ","
-            if "posX" in var and "posZ" in var:
-                return None
-            for pos in ["posX", "posY", "posZ", "posE"]:
-                if pos in var:
-                    value_in = var.split("'data':")[1].split(pos)[1].split(",")[0]
-                    datapoint["value"] = float(re.sub('[^.0-9]+', '', value_in))
-                    datapoint["quantity"] = "rasp02/um2-{}".format(pos)
-            ts_in = var.split("'ts':")[1].split(",")[0]
-            datapoint["ts"] = float(re.sub('[^0-9]+', '', ts_in)[:13])
+    ts_in = payload.get("ts", None)
+    if ts_in is None:  # return if no timestamp is found in payload
+        return None
 
-        elif "rasp02/um2-temp" in str(msg):
-            var = str(msg).split('value={')[1].split('}')[0] + ","
-            if "targetNozzle" in var and "tempBed" in var:
-                return None
-            for temp in ["targetNozzle", "targetBed", "tempNozzle", "tempBed"]:
-                if temp in var:
-                    value_in = var.split("'data':")[1].split(temp)[1].split(",")[0]
-                    datapoint["value"] = float(re.sub('[^.0-9]+', '', value_in))
-                    datapoint["quantity"] = "rasp02/um2-{}".format(temp)
-            ts_in = var.split("'ts':")[1].split(",")[0]
-            datapoint["ts"] = float(re.sub('[^0-9]+', '', ts_in)[:13])
+    for key, value in payload.items():
+        if key in data_of_interest:
+            datapoint = dict()
+            datapoint["value"] = value
+            datapoint["quantity"] = "rasp02/{}".format(key)
+            datapoint["ts"] = ts_in
+            datapoints.append(datapoint)
+    return datapoints
 
-        elif structure == 1:
-            var = str(msg).split('{')[1].split('}')[0] + ","
-            value_in = re.sub('[^.0-9]+', '', var.split("data")[1].split(",")[0])
-            try:
-                datapoint["value"] = float(value_in)
-            except ValueError:
-                datapoint["value"] = value_in
-
-            ts_in = var.split("ts")[1].split(",")[0]
-            datapoint["ts"] = float(re.sub('[^.0-9]+', '', ts_in))
-
-            topic_in = var.split("topic")[1].split(":")[1].split(",")[0]
-            datapoint["quantity"] = topic_in.replace("'", "").replace('"', '').strip()
-
-        elif structure == 2:
-            inner = str(msg).split('{')[2].split("}")[0].split(",")
-            for metric in inner:
-                if "'ts':" in metric:
-                    datapoint["ts"] = float(re.sub('[^.0-9]+', '', metric))
-                else:
-                    value_in = re.sub('[^.0-9]+', '', metric)
-                    try:
-                        datapoint["value"] = float(value_in)
-                    except ValueError:
-                        datapoint["value"] = value_in
-
-            var = "".join("".join(str(msg).split('{')[1:]).split("}")[:-1])
-            topic_in = var.split("topic")[1].split(":")[1].split(",")[0]
-            datapoint["quantity"] = topic_in.replace("'", "").replace('"', '').strip()
-
-        else:
-            logger.warning("\nFetched undefined input:")
-            var = str(msg).split('value={')[1].split('}')[0] + ","
-            value_in = var.split("data':")[1].split(",")[0]
-            datapoint["value"] = float(re.sub('[^.0-9]+', '', value_in))
-            ts_in = var.split("ts':")[1].split(",")[0]
-            datapoint["ts"] = float(re.sub('[^.0-9]+', '', ts_in))
-
-            topic_in = str(msg).split('value={')[1].split("topic':")[1].split(",")[0]
-            datapoint["quantity"] = topic_in.replace("'", "")
-
-    except Exception as e:
-        logger.error(e)
-        sys.exit()
-
-    return datapoint
 
 
 def convert_datastream_id(datapoint):
@@ -248,7 +199,8 @@ def convert_datastream_id(datapoint):
         datapoint["quantity"] = DATASTREAM_MAPPING[datapoint["quantity"]]
         return datapoint
     except KeyError:
-        # logger.debug("Ignoring {}".format(datapoint))
+        if datapoint["quantity"] not in BLACKLIST.keys():
+            logger.warning("Ignoring {}".format(datapoint))
         pass
     return None
 
@@ -308,7 +260,7 @@ def publish_message(message):
     :return: None
     """
     try:
-        producer.produce(KAFKA_TOPIC, json.dumps(message).encode('ascii'))
+        producer.produce(KAFKA_TOPIC, json.dumps(message).encode('utf-8'))
     except:
         logger.exception("Exception while sending: {} \non kafka topic: {}".format(message, KAFKA_TOPIC))
 

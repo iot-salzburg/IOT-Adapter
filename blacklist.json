@@ -1,0 +1,26 @@
+{
+    "rasp02/mem": 0,
+    "rasp02/cpu": 0,
+    "rasp02/cpu-temp": 0,
+    "rasp02/net-wlan0": 0,
+
+    "il032/mem": 0,
+    "il032/cpu": 0,
+    "il032/cpu-temp": 0,
+    "il032/net-wlan0": 0,
+
+    "rasp02/posE": 0,
+    "rasp02/posX": 0,
+    "rasp02/posY": 0,
+    "rasp02/posZ": 0,
+    "rasp02/targetNozzle": 0,
+    "rasp02/targetBed": 0,
+
+    "Printing": 0,
+    "rasp05/filaRate": 0,
+    "rasp05/movement-detection": 0,
+    "rasp05/Skid": 0,
+
+    "cam1/motioneye": 0,
+    "cam2/motioneye": 0
+}

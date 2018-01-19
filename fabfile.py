@@ -27,3 +27,7 @@ def deploy():
 @task
 def logs():
     sudo('docker logs -f iot-adapter')
+
+@task
+def stop():
+    sudo('docker rm -f iot-adapter')
