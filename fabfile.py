@@ -18,7 +18,7 @@ def deploy():
         sudo('docker run '
             '-dit '
             '--restart always '
-            '-e "LOGSTASH_HOST=il012" '
+            '-e "LOGSTASH_HOST=il060" '
             '-e "LOG_LEVEL=DEBUG" '
             '--name iot-adapter '
             'i-maintenance/iot-adapter')

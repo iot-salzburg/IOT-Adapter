@@ -166,7 +166,7 @@ def mqtt_to_sensorthings(msg):
 def fetch_multiple_data(payload):
     """
     Previously used for parsing kafka messages
-    :param msg: old kafka message
+    :param payload: old kafka message
     :return: datapoint dictionary
     """
     datapoints = list()
@@ -184,7 +184,6 @@ def fetch_multiple_data(payload):
             datapoint["ts"] = ts_in
             datapoints.append(datapoint)
     return datapoints
-
 
 
 def convert_datastream_id(datapoint):
@@ -260,7 +259,12 @@ def publish_message(message):
     :return: None
     """
     try:
-        producer.produce(KAFKA_TOPIC, json.dumps(message).encode('utf-8'))
+        producer.produce(KAFKA_TOPIC, json.dumps(message).encode('utf-8'),
+                         key=str(message['Datastream']['@iot.id']).encode('utf-8'))
+        producer.poll(0) # using poll(0), as Eden Hill mentions it avoids BufferError: Local: Queue full
+        # producer.flush() poll should be faster here
+        #
+        # print("sent:", str(message), str(message['Datastream']['@iot.id']).encode('utf-8'))
     except:
         logger.exception("Exception while sending: {} \non kafka topic: {}".format(message, KAFKA_TOPIC))
 
