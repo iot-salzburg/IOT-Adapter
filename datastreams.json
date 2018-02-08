@@ -7,5 +7,8 @@
     "rasp02/tempNozzle": 6,
     "rasp05/airquality": 7,
     "rasp02/um2-posZ": 8,
-    "rasp05/filaConsumption": 9
+    "rasp05/filaConsumption": 9,
+
+    "rasp05/movement-detection": 31,
+    "Printing": 32
 }

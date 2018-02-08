@@ -16,9 +16,7 @@
     "rasp02/targetNozzle": 0,
     "rasp02/targetBed": 0,
 
-    "Printing": 0,
     "rasp05/filaRate": 0,
-    "rasp05/movement-detection": 0,
     "rasp05/Skid": 0,
 
     "cam1/motioneye": 0,
