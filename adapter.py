@@ -56,7 +56,7 @@ conf = {'bootstrap.servers': BOOTSTRAP_SERVERS_default}
 producer = Producer(**conf)
 
 # setup logging
-logger = logging.getLogger('iot-adapter')
+logger = logging.getLogger('iot-adapter.logging')
 logger.setLevel(os.getenv('LOG_LEVEL', logging.INFO))
 console_logger = logging.StreamHandler(stream=sys.stdout)
 console_logger.setFormatter(logging.Formatter(logging.BASIC_FORMAT))
