@@ -31,8 +31,8 @@ __status__ = "Development"
 
 MQTT_BROKER = "il050.salzburgresearch.at"
 
-LOGSTASH_HOST = os.getenv('LOGSTASH_HOST', 'localhost')  # TODO set to il060
-LOGSTASH_PORT = int(os.getenv('LOGSTASH_PORT', '5000'))  # TODO is always 5000
+LOGSTASH_HOST = os.getenv('LOGSTASH_HOST', 'il060')
+LOGSTASH_PORT = int(os.getenv('LOGSTASH_PORT', '5000'))
 
 # kafka parameters
 # topics and servers should be of the form: "topic1,topic2,..."
@@ -111,8 +111,7 @@ def on_message(client, userdata, msg):
             message = create_message(datapoint)
 
             publish_message(message)
-            #logger.debug(
-            #    "\tSent:\t%-25s %-40s%-10s" % (datapoint["quantity"], datapoint["ts"], datapoint["value"]))
+            logger.debug("\tSent:\t%-25s %-40s%-10s" % (datapoint["quantity"], datapoint["ts"], datapoint["value"]))
             time.sleep(0)
 
 
