@@ -3,6 +3,7 @@
     "rasp02/cpu": 0,
     "rasp02/cpu-temp": 0,
     "rasp02/net-wlan0": 0,
+    "rasp02/printing": 0,
 
     "il032/mem": 0,
     "il032/cpu": 0,
@@ -21,6 +22,9 @@
     "rasp05/Skid": 0,
     "rasp05/Retraction": 0,
     "rasp05/Feed": 0,
+    "rasp05/accelX": 0,
+    "rasp05/accelY": 0,
+    "rasp05/accelZ": 0,
 
     "cam1/motioneye": 0,
     "cam2/motioneye": 0

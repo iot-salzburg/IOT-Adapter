@@ -260,7 +260,7 @@ def publish_message(message):
     try:
         producer.produce(KAFKA_TOPIC, json.dumps(message).encode('utf-8'),
                          key=str(message['Datastream']['@iot.id']).encode('utf-8'))
-        producer.poll(0) # using poll(0), as Eden Hill mentions it avoids BufferError: Local: Queue full
+        producer.poll(0)  # using poll(0), as Eden Hill mentions it avoids BufferError: Local: Queue full
         # producer.flush() poll should be faster here
         #
         # print("sent:", str(message), str(message['Datastream']['@iot.id']).encode('utf-8'))

@@ -1,8 +1,14 @@
-# Kafka to Logstash Adapter with status webserver integrated in the Data Analytics Stack
+# IOT-Adapter
+Connecting MQTT services with the i-Maintenance Messaging System.
 
-This component subscribes to topics from the Apache Kafka message broker and forwards them to the Logstash instance of a running ELK Stack. Optionally, the adapter maps IDs with the SensorThings Server in order to provide a plain and intuitive data channel management.
+
+
+This component subscribes to topics from the Internet of Things Protokoll MQTT and
+forwards them to the the Apache Kafka message broker.
+
 
 The Kafka Adapter based on the components:
+* Paho-MQTT Messaging Client, [paho.mqtt](https://pypi.python.org/pypi/paho-mqtt/1.3.1) version **1.3.1**
 * Kafka Client [librdkafka](https://github.com/geeknam/docker-confluent-python) version **0.11.1**
 * Python Kafka module [confluent-kafka-python](https://github.com/confluentinc/confluent-kafka-python) version **0.9.1.2**
 
@@ -10,9 +16,9 @@ The Kafka Adapter based on the components:
 ## Contents
 
 1. [Requirements](#requirements)
-2. [Usage](#usage)
+2. [Deployment](#deployment)
 3. [Configuration](#configuration)
-4. [Trouble-Shooting](#Trouble-shooting)
+4. [Trouble-Shooting](#trouble-shooting)
 
 
 ## Requirements
@@ -22,19 +28,23 @@ The Kafka Adapter based on the components:
 3. Clone this repository
 
 
-## Usage
+## Deployment
 
-Make sure the `elastic stack` ist running on the same host if you start the DB-Adapter.
-Test the `elastic stack` in your browser [http://hostname:5601/status](http://hostname:5601/status).
+The IOT-Adapter uses the optionally Sensorthings to semantically describe
+the forwarded data. The later consumage of the sensor data with the
+suggested [DB-Adapter](https://github.com/i-maintenance/DB-Adapter/)
+works best with a running and feeded [SensorThings](https://github.com/i-maintenance/SensorThingsClient)
+ Client.
+
 
 
 ### Testing
 Using `docker-compose`:
 
 ```bash
-cd /iot-Adapter
+cd /iot-adapter
 sudo docker-compose up --build -d
-```
+```Trouble-shooting
 
 The flag `-d` stands for running it in background (detached mode):
 
@@ -58,7 +68,7 @@ curl 127.0.0.1:5001/v2/
 This should output `{}`:
 
 
-If running with docker-compose works, push the image in order to make the customized image runnable in the stack
+If running with docker-coTrouble-shootingmpose works, push the image in order to make the customized image runnable in the stack
 
 ```bash
 cd ../iot-Adapter
@@ -81,6 +91,19 @@ sudo docker stack ps iot-adapter
 sudo docker service logs iot-adapter_adapter -f
 ```
 
+
+## Configuration
+
+The IOT-Adapter uses a Whitelist (`datastreams.json`) as well as a
+Blacklist (`blacklist.json`). The first one lists any data which should be
+forwarded into the i-Maintenance Messaging System with its corresponding
+SensorThings - Datastream-Id. The later lists sensordata that should be
+ignored by the IOT-Adapter. If data is fetched without being in any of
+these files, a warning message is produced that will be seen if running:
+
+```bash
+sudo docker service logs iot-adapter_adapter -f
+```
 
 
 ## Trouble-shooting
