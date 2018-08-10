@@ -98,7 +98,13 @@ def on_message(client, userdata, msg):
     :param msg: Incoming raw MQTT message
     :return:
     """
+    print("New MQTT message: {}".format(msg))
+
+    if msg.payload is None:
+        return
     datapoints = mqtt_to_sensorthings(msg)
+    if datapoints is None:
+        return
 
     for datapoint in list(datapoints):
         if datapoint is None:
@@ -139,7 +145,7 @@ def mqtt_to_sensorthings(msg):
     datapoint = dict()
     datapoint["quantity"] = msg.topic
 
-    payload = json.loads(msg.payload.decode("utf-8"))
+    payload = json.loads(msg.payload)  # .decode("utf-8")
     if type(payload) in [type(0), type(0.0)]:
         datapoint["value"] = payload
         datapoint["ts"] = datetime.utcnow().replace(tzinfo=pytz.UTC).isoformat()

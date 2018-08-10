@@ -1,4 +1,4 @@
-FROM python:3.6-onbuild
+FROM python:3.6
 # not using onbuild, because changed code results in installation time
 
 MAINTAINER Johannes Innerbichler <j.innerbichler@gmail.com>
