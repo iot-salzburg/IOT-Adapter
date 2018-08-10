@@ -21,6 +21,8 @@
 
     "rasp05/Skid": 0,
     "rasp05/Retraction": 0,
+    "rasp05/filaIn": 0,
+    "rasp05/UndefState": 0,
     "rasp05/Feed": 0,
     "rasp05/accelX": 0,
     "rasp05/accelY": 0,
