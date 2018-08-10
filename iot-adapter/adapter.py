@@ -98,11 +98,10 @@ def on_message(client, userdata, msg):
     :param msg: Incoming raw MQTT message
     :return:
     """
-    print("New MQTT message: {}".format(msg))
+    # print("New MQTT message: {}, {}".format(msg.topic, msg.payload))
 
-    if msg.payload is None:
-        return
     datapoints = mqtt_to_sensorthings(msg)
+
     if datapoints is None:
         return
 
@@ -142,10 +141,15 @@ def mqtt_to_sensorthings(msg):
     :param msg: MQTT message including topic and payload
     :return: datapoint dictionary including quantity (topic), timestamp and value
     """
+
     datapoint = dict()
     datapoint["quantity"] = msg.topic
+    try:
+        payload = json.loads(msg.payload.decode("utf-8"))
+    except:
+        logger.warning("Couldn't parse message")
+        return
 
-    payload = json.loads(msg.payload)  # .decode("utf-8")
     if type(payload) in [type(0), type(0.0)]:
         datapoint["value"] = payload
         datapoint["ts"] = datetime.utcnow().replace(tzinfo=pytz.UTC).isoformat()
@@ -268,7 +272,6 @@ def publish_message(message):
                          key=str(message['Datastream']['@iot.id']).encode('utf-8'))
         producer.poll(0)  # using poll(0), as Eden Hill mentions it avoids BufferError: Local: Queue full
         # producer.flush() poll should be faster here
-        #
         # print("sent:", str(message), str(message['Datastream']['@iot.id']).encode('utf-8'))
     except:
         logger.exception("Exception while sending: {} \non kafka topic: {}".format(message, KAFKA_TOPIC))
