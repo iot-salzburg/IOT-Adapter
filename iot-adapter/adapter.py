@@ -208,7 +208,8 @@ def convert_datastream_id(datapoint):
         return datapoint
     except KeyError:
         if datapoint["quantity"] not in BLACKLIST.keys():
-            logger.warning("Ignoring {}".format(datapoint))
+            pass
+            # logger.warning("Ignoring {}".format(datapoint))
         pass
     return None
 
