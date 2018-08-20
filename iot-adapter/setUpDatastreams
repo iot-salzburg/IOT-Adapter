@@ -1,0 +1,13 @@
+{
+  "name": "Filament Movement",
+  "description": "Detection of a filament movement",
+  "observationType": "http://www.opengis.net/def/observationType/OGC-OM/2.0/OM_Measurement",
+  "unitOfMeasurement": {
+    "name": "Binary",
+    "symbol": "Ei",
+    "definition": "http://www.qudt.org/qudt/owl/1.0.0/unit/Instances.html#BinaryPrefixUnit"
+  },
+  "Thing":{"@iot.id":1},
+  "ObservedProperty":{"@iot.id":1},
+  "Sensor":{"@iot.id":1}
+}

@@ -25,20 +25,22 @@ from logstash import TCPLogstashHandler
 
 __author__ = "Salzburg Research"
 __version__ = "1.2"
-__date__ = "4 Dezember 2017"
+__date__ = "20 August 2017"
 __email__ = "christoph.schranz@salzburgresearch.at"
 __status__ = "Development"
 
 MQTT_BROKER = "il050.salzburgresearch.at"
+MQTT_BROKER = "192.168.48.81"
 
-LOGSTASH_HOST = os.getenv('LOGSTASH_HOST', 'il060')
+
+LOGSTASH_HOST = os.getenv('LOGSTASH_HOST', 'il081')
 LOGSTASH_PORT = int(os.getenv('LOGSTASH_PORT', '5000'))
 
 # kafka parameters
 # topics and servers should be of the form: "topic1,topic2,..."
-KAFKA_TOPIC = "SensorData"
-BOOTSTRAP_SERVERS_default = 'il061,il062,il063'
-KAFKA_GROUP_ID = "db-adapter"
+KAFKA_TOPIC = "dtz-sensorthings"
+BOOTSTRAP_SERVERS = 'il081:9093,il082:9094,il083:9095'
+KAFKA_GROUP_ID = "mqtt-adapter"
 
 # The mapping between incoming and outgoing metrics is defined by
 # the json file located on:
@@ -52,11 +54,11 @@ with open(blacklist_map) as bl_file:
     BLACKLIST = json.load(bl_file)
 
 # Define Kafka Producer
-conf = {'bootstrap.servers': BOOTSTRAP_SERVERS_default}
+conf = {'bootstrap.servers': BOOTSTRAP_SERVERS}
 producer = Producer(**conf)
 
 # setup logging
-logger = logging.getLogger('iot-adapter.logging')
+logger = logging.getLogger('mqtt-adapter.logging')
 logger.setLevel(os.getenv('LOG_LEVEL', logging.INFO))
 console_logger = logging.StreamHandler(stream=sys.stdout)
 console_logger.setFormatter(logging.Formatter(logging.BASIC_FORMAT))
@@ -76,6 +78,7 @@ def define_mqtt_statemachine():
     Setting up MQTT client and define function on mqtt events.
     :return:
     """
+    init_datastreams()
     # The protocol must be specified in python!
     client = mqtt.Client(protocol=mqtt.MQTTv31)
     client.on_connect = on_connect
@@ -85,6 +88,28 @@ def define_mqtt_statemachine():
     client.connect(MQTT_BROKER, 1883, 60)
     logger.info("Connection to {} on port {} established".format(MQTT_BROKER, 1883))
     client.loop_forever()
+
+
+def init_datastreams():
+    for datastream, _id in DATASTREAM_MAPPING.items():
+        print(datastream, _id)
+
+
+def on_connect(client, userdata, flags, rc):
+    """Report if connection to MQTT_BROKER is established
+    and subscribe to all topics. MQTT subroutine"""
+    logger.info("Connected with result code " + str(rc))
+    # Subscribing in on_connect() means that if we lose the connection and
+    # reconnect then subscriptions will be renewed.
+    # client.subscribe("prusa3d/#")
+    #client.subscribe("octoprint/#")
+    client.subscribe("testtopic/#")
+
+
+def on_disconnect(client, userdata, rc):
+    """Reporting if connection to MQTT_BROKER is lost. MQTT subroutine"""
+    logger.warning("Disconnect, reason: " + str(rc))
+    logger.warning("Disconnect, reason: " + str(client))
 
 
 def on_message(client, userdata, msg):
@@ -98,41 +123,40 @@ def on_message(client, userdata, msg):
     :param msg: Incoming raw MQTT message
     :return:
     """
-    # print("New MQTT message: {}, {}".format(msg.topic, msg.payload))
+    
+    print("New MQTT message: {}, {}".format(msg.topic, msg.payload))
 
-    datapoints = mqtt_to_sensorthings(msg)
-
-    if datapoints is None:
-        return
-
-    for datapoint in list(datapoints):
-        if datapoint is None:
-            return None
-
-        datapoint["ts"] = convert_timestamp(datapoint["ts"])
-
-        datapoint = convert_datastream_id(datapoint)
-        if datapoint:
-            message = create_message(datapoint)
-
-            publish_message(message)
-            logger.debug("\tSent:\t%-25s %-40s%-10s" % (datapoint["quantity"], datapoint["ts"], datapoint["value"]))
-            time.sleep(0)
+    message = dict()
+    if msg.topic.startswith("testtopic"):
+        message["quantity"] = msg.topic.replace("/", ".")
+        message["result"] = float(msg.payload)
+        message["phenomenonTime"] = datetime.now().replace(tzinfo=pytz.UTC).isoformat()
+        message["phenomenonTime"] = datetime.now().replace(tzinfo=pytz.UTC).isoformat()
 
 
-def on_connect(client, userdata, flags, rc):
-    """Report if connection to MQTT_BROKER is established
-    and subscribe to all topics. MQTT subroutine"""
-    logger.info("Connected with result code " + str(rc))
-    # Subscribing in on_connect() means that if we lose the connection and
-    # reconnect then subscriptions will be renewed.
-    client.subscribe("#")
+    publish_message(message)
 
-
-def on_disconnect(client, userdata, rc):
-    """Reporting if connection to MQTT_BROKER is lost. MQTT subroutine"""
-    logger.warning("Disconnect, reason: " + str(rc))
-    logger.warning("Disconnect, reason: " + str(client))
+    # datapoints = mqtt_to_sensorthings(msg)
+    #
+    # if datapoints is None:
+    #     # logger.warning("Datapoints is None")
+    #     return
+    #
+    # for datapoint in list(datapoints):
+        # if msg.topic.startswith("testtopic"):
+        #     print("Testcal")
+        #     print(datapoint)
+        #
+        # datapoint["ts"] = convert_timestamp(datapoint["ts"])
+        #
+        # datapoint = convert_datastream_id(datapoint)
+        # if datapoint:
+        #     print("debug10")
+        #     message = create_message(datapoint)
+        #
+        #     publish_message(message)
+        #     logger.debug("\tSent:\t%-25s %-40s%-10s" % (datapoint["quantity"], datapoint["ts"], datapoint["value"]))
+        #     time.sleep(0)
 
 
 def mqtt_to_sensorthings(msg):
@@ -268,6 +292,8 @@ def publish_message(message):
     :param message: dictionary with 4 keywords
     :return: None
     """
+    print("HAALLO")
+    return
     try:
         producer.produce(KAFKA_TOPIC, json.dumps(message).encode('utf-8'),
                          key=str(message['Datastream']['@iot.id']).encode('utf-8'))
