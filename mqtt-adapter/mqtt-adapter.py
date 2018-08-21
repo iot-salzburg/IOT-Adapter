@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 #  -*- coding: utf-8 -*-
 
-"""adapter.py: This module fetches heterogenious data from the Iot-Lab's MQTT_BORKER
+"""mqtt-adapter.py: This module fetches heterogenious data from the Iot-Lab's MQTT_BORKER
 (3D printer data previously bundled on node-red), converts it into the canonical dataformat as
 specified in SensorThings and sends it in the Kafka message Bus.
 If MQTT doesn't work, make sure that
@@ -38,7 +38,8 @@ LOGSTASH_PORT = int(os.getenv('LOGSTASH_PORT', '5000'))
 
 # kafka parameters
 # topics and servers should be of the form: "topic1,topic2,..."
-KAFKA_TOPIC = "dtz-sensorthings"
+KAFKA_TOPIC_metric = "dtz.sensorthings"
+KAFKA_TOPIC_logging = "dtz.logging"
 BOOTSTRAP_SERVERS = 'il081:9093,il082:9094,il083:9095'
 KAFKA_GROUP_ID = "mqtt-adapter"
 
@@ -101,10 +102,10 @@ def on_connect(client, userdata, flags, rc):
     logger.info("Connected with result code " + str(rc))
     # Subscribing in on_connect() means that if we lose the connection and
     # reconnect then subscriptions will be renewed.
-    #client.subscribe("prusa3d/#")
-    #client.subscribe("octoprint/#")
-    #client.subscribe("testtopic/#")
-    client.subscribe("#")
+    client.subscribe("prusa3d/#")
+    client.subscribe("octoprint/#")
+    # client.subscribe("testtopic/#")
+    # client.subscribe("#")
 
 
 def on_disconnect(client, userdata, rc):
@@ -125,7 +126,7 @@ def on_message(client, userdata, msg):
     :return:
     """
     
-    print("New MQTT message: {}, {}".format(msg.topic, msg.payload))
+    logger.debug("New MQTT message: {}, {}".format(msg.topic, "-"))  # msg.payload))
     if msg.topic not in MQTT_TOPICS:
         MQTT_TOPICS.append(msg.topic)
         with open(topics_list_file, "w") as topics_file:
@@ -133,68 +134,122 @@ def on_message(client, userdata, msg):
             logger.info("Found new mqtt topic: {} and saved it to file".format(msg.topic))
 
     messages = list()
-    message = dict()
     if msg.topic.startswith("testtopic"):
+        message = dict()
         message["quantity"] = msg.topic.replace("/", ".")
         message["result"] = float(msg.payload)
         message["phenomenonTime"] = datetime.now().replace(tzinfo=pytz.UTC).isoformat()
         message["phenomenonTime"] = datetime.now().replace(tzinfo=pytz.UTC).isoformat()
         messages.append(message)
 
-    if msg.topic.startswith("octoprint/temperature"):
+    elif msg.topic.startswith("octoprint/temperature"):
         messages = parse_octoprint_temperature(msg)
+    elif msg.topic.startswith("prusa3d/temperature"):
+        messages = parse_prusa3d_temperature(msg)
+    elif msg.topic.startswith("prusa3d/progress"):
+        messages = parse_prusa3d_progress(msg)
+    elif msg.topic.startswith("prusa3d/mqtt"):
+        messages = parse_prusa3d_mqtt(msg)
+    elif msg.topic.startswith("prusa3d/event"):
+        messages = parse_prusa3d_event(msg)
+    else:
+        logger.warning("Found unparsed message: {}: {}".format(msg.topic, msg.payload))
 
-    if messages is list():
+    if messages in [None, list()]:
         return
-    print(messages)
-    publish_message(messages)
-
-    # datapoints = mqtt_to_sensorthings(msg)
-    #
-    # if datapoints is None:
-    #     # logger.warning("Datapoints is None")
-    #     return
-    #
-    # for datapoint in list(datapoints):
-        # if msg.topic.startswith("testtopic"):
-        #     print("Testcal")
-        #     print(datapoint)
-        #
-        # datapoint["ts"] = convert_timestamp(datapoint["ts"])
-        #
-        # datapoint = convert_datastream_id(datapoint)
-        # if datapoint:
-        #     print("debug10")
-        #     message = create_message(datapoint)
-        #
-        #     publish_message(message)
-        #     logger.debug("\tSent:\t%-25s %-40s%-10s" % (datapoint["quantity"], datapoint["ts"], datapoint["value"]))
-        #     time.sleep(0)
+    for message in messages:
+        logger.debug("Trying to publish: {}".format(message["Datastream"]))
+        message = convert_datastream_id(message)
+        if message:
+            publish_message(message)
 
 
 def parse_octoprint_temperature(msg):
-    message = dict()
-
     payload = json.loads(msg.payload.decode("utf-8"))
-    message["phenomenonTime"] = convert_timestamp(payload["_timestamp"])
-    message["resultTime"] = datetime.now().replace(tzinfo=pytz.UTC).isoformat()
 
-    messages = list([message, message])
-    if msg.topic == "octoprint/temperature/bed":
-        messages[0]['Datastream'] = "octoprint.bed.temp.target"
-        messages[1]['Datastream'] = "octoprint.bed.temp.actual"
-    elif msg.topic == "octoprint/temperature/tool0":
-        messages[0]['Datastream'] = "octoprint.nozzle0.temp.target"
-        messages[1]['Datastream'] = "octoprint.nozzle0.temp.actual"
-    else:
-        logger.warning("Octoprint quantity not implemnted yet")
-
-    messages[0]["result"] = payload["target"]
-    messages[1]["result"] = payload["actual"]
+    messages = list()
+    for direction in ["target", "actual"]:
+        if direction in payload.keys():
+            message = dict()
+            message["phenomenonTime"] = convert_timestamp(payload["_timestamp"])
+            message["resultTime"] = datetime.now().replace(tzinfo=pytz.UTC).isoformat()
+            message["result"] = payload[direction]
+            if msg.topic == "octoprint/temperature/bed":
+                message["Datastream"] = "prusa3d.bed.temp.{}".format(direction)  # TODO is octoprint and prusa3d equal
+            elif msg.topic == "octoprint/temperature/tool0":
+                message["Datastream"] = "prusa3d.tool0.temp.{}".format(direction)  # TODO is octoprint and prusa3d equal
+            else:
+                logger.warning("Octoprint quantity not implemented.")
+            messages.append(message)
+        else:
+            logger.warning("Octoprint payload direction not implemented.")
 
     return messages
 
 
+def parse_prusa3d_temperature(msg):
+    payload = json.loads(msg.payload.decode("utf-8"))
+
+    messages = list()
+    for direction in ["target", "actual"]:
+        if direction in payload.keys():
+            message = dict()
+            message["phenomenonTime"] = convert_timestamp(payload["_timestamp"])
+            message["resultTime"] = datetime.now().replace(tzinfo=pytz.UTC).isoformat()
+            message["result"] = payload[direction]
+            if msg.topic == "prusa3d/temperature/bed":
+                message["Datastream"] = "prusa3d.bed.temp.{}".format(direction)
+            elif msg.topic == "prusa3d/temperature/tool0":
+                message["Datastream"] = "prusa3d.tool0.temp.{}".format(direction)
+            else:
+                logger.warning("Octoprint quantity not implemented.")
+            messages.append(message)
+        else:
+            logger.warning("Octoprint payload direction not implemented.")
+
+    return messages
+
+
+def parse_prusa3d_progress(msg):
+    message = dict()
+    payload = json.loads(msg.payload.decode("utf-8"))
+    message["phenomenonTime"] = convert_timestamp(payload["_timestamp"])
+    del(payload["_timestamp"])
+    message["resultTime"] = datetime.now().replace(tzinfo=pytz.UTC).isoformat()
+    message["message"] = payload
+    message["Datastream"] = "prusa3d.progress.status"
+    return [message]
+
+
+def parse_prusa3d_mqtt(msg):
+    message = dict()
+    payload = msg.payload.decode("utf-8")
+    try:
+        message["phenomenonTime"] = convert_timestamp(payload["_timestamp"])
+    except TypeError:
+        message["phenomenonTime"] = datetime.now().replace(tzinfo=pytz.UTC).isoformat()
+    message["resultTime"] = datetime.now().replace(tzinfo=pytz.UTC).isoformat()
+    message["message"] = payload
+    message["Datastream"] = "prusa3d.mqtt.status"
+    return [message]
+
+
+def parse_prusa3d_event(msg):
+    # Skip ZChange information as they occur to frequently
+    if msg.topic == "prusa3d/event/ZChange":
+        return None
+
+    message = dict()
+    payload = json.loads(msg.payload.decode("utf-8"))
+    try:
+        message["phenomenonTime"] = convert_timestamp(payload["_timestamp"])
+        del(payload["_timestamp"])
+    except KeyError:
+        message["phenomenonTime"] = datetime.now().replace(tzinfo=pytz.UTC).isoformat()
+    message["resultTime"] = datetime.now().replace(tzinfo=pytz.UTC).isoformat()
+    message["message"] = payload
+    message["Datastream"] = "prusa3d.event.status"
+    return [message]
 
 
 def mqtt_to_sensorthings(msg):
@@ -257,20 +312,26 @@ def fetch_multiple_data(payload):
     return datapoints
 
 
-def convert_datastream_id(datapoint):
+def convert_datastream_id(message):
     """
     Translate message metric: the MQTT input topic into the kafka bus quantity name via the
     metrics mapping json file.
-    :param datapoint: dictionary including quantity, timestamp and value
+    :param message: dictionary including quantity, timestamp and value
     :return: updated datapoint dictionary including timestamp, value and new quantity
     :rtype: dictionary. None if datapoint is ignored.
     """
-    if datapoint["quantity"] in DATASTREAM_MAPPING.keys():
-        print('datapoint["quantity"]: {}'.format(datapoint["quantity"]))
-        datapoint["quantity"] = DATASTREAM_MAPPING[datapoint["quantity"]]
-        print('datapoint["quantity"]: {}'.format(datapoint["quantity"]))
-        return datapoint
-    return None
+
+    if not isinstance(message["Datastream"], str):
+        logger.error("Bad instance: {}".format(message))
+        return None
+    if message["Datastream"] in DATASTREAM_MAPPING.keys():
+        iot_id = DATASTREAM_MAPPING[message["Datastream"]]["id"]
+        message["Datastream"] = {"@iot.id": iot_id}
+        return message
+    else:
+        logger.warning("Datastream not listed: {}".format(message["Datastream"]))
+        print(message)
+        return None
 
 
 def create_message(datapoint):
@@ -318,7 +379,28 @@ def convert_timestamp(ts_in, form="ISO8601"):
 
 
 # noinspection PyBroadException
-def publish_message(messages):
+def publish_message(message):
+    """
+    Publish the canonical data format (Version: i-maintenance first iteration)
+    to the Kafka Bus.
+
+    Keyword argument:
+    :param message: dictionary with 4 keywords
+    :return: None
+    """
+
+    try:
+        producer.produce(KAFKA_TOPIC_metric, json.dumps(message).encode('utf-8'),
+                         key=str(message['Datastream']['@iot.id']).encode('utf-8'))
+        producer.poll(0)  # using poll(0), as Eden Hill mentions it avoids BufferError: Local: Queue full
+        # producer.flush() poll should be faster here
+        print("sent:", str(message['Datastream']['@iot.id']).encode('utf-8'), str(message))
+    except Exception as e:
+        logger.exception("Exception while sending metric: {} \non kafka topic: {}\n Error: {}".
+                         format(message, KAFKA_TOPIC_metric, e))
+
+
+def publish_message_logging(message):
     """
     Publish the canonical data format (Version: i-maintenance first iteration)
     to the Kafka Bus.
@@ -329,16 +411,15 @@ def publish_message(messages):
     """
     print("sending prevented")
     return
-    for message in messages:
-        try:
-            producer.produce(KAFKA_TOPIC, json.dumps(message).encode('utf-8'),
-                             key=str(message['Datastream']['@iot.id']).encode('utf-8'))
-            producer.poll(0)  # using poll(0), as Eden Hill mentions it avoids BufferError: Local: Queue full
-            # producer.flush() poll should be faster here
-            # print("sent:", str(message), str(message['Datastream']['@iot.id']).encode('utf-8'))
-        except:
-            logger.exception("Exception while sending: {} \non kafka topic: {}".format(message, KAFKA_TOPIC))
-
+    try:
+        producer.produce(KAFKA_TOPIC_logging, json.dumps(message).encode('utf-8'),
+                         key=str(message['Datastream']).encode('utf-8'))
+        producer.poll(0)  # using poll(0), as Eden Hill mentions it avoids BufferError: Local: Queue full
+        # producer.flush() poll should be faster here
+        # print("sent:", str(message), str(message['Datastream']['@iot.id']).encode('utf-8'))
+    except Exception as e:
+        logger.exception("Exception while sending log: {} \non kafka topic: {}\n Error: {}".
+                         format(message, KAFKA_TOPIC_metric, e))
 
 if __name__ == '__main__':
     define_mqtt_statemachine()

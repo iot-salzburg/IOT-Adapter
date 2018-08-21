@@ -27,4 +27,4 @@ RUN pip install -r requirements.txt
 # setup proper configuration
 ENV PYTHONPATH .
 
-ENTRYPOINT ["python", "adapter.py"]
+ENTRYPOINT ["python", "mqtt-adapter.py"]

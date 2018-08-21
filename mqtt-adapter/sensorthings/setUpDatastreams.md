@@ -65,13 +65,19 @@ http://il081:8084/v1.0/Sensors
   "metadata": "https://www.prusa3d.com/downloads/manual/prusa3d_manual_175_en.pdf"
 }
 
+{
+  "name": "prusa internal controller",
+  "description": "Derived Output from the internal controller of the Prusa i3 3D Printer",
+  "encodingType": "application/pdf",
+  "metadata": "https://www.prusa3d.com/downloads/manual/prusa3d_manual_175_en.pdf"
+}
 
 
 ## Datastreams with Observed Properties
 
 http://il081:8084/v1.0/Datastreams
 
-
+### Temperature Data
 {
   "name": "Target Bed Temperature Prusa",
   "description": "Datastream for the target temperature of the Prusa 3D printer's bed",
@@ -164,4 +170,66 @@ http://il081:8084/v1.0/Datastreams
 }
 
 
+### Processing Data
 
+{
+  "name": "Processing information",
+  "description": "Datastream for the internal processings",
+  "observationType": "http://www.opengis.net/def/observationType/OGC-OM/2.0/OM_Observation",
+  "unitOfMeasurement": {
+    "name": "processing information",
+    "symbol": "srfg.prusa3d.processing",
+    "definition": "json-message"
+      },
+  "Thing":{"@iot.id":1},
+  "ObservedProperty":
+    {
+      "name": "processing data",
+      "description": "processes run to perform a print (printing, slicing)",
+      "definition": "srfg.prusa3d.processing"
+    },
+  "Sensor":{"@iot.id":5}
+}
+
+### MQTT status
+
+{
+  "name": "mqtt connection status",
+  "description": "Datastream for the mqtt network connection",
+  "observationType": "http://www.opengis.net/def/observationType/OGC-OM/2.0/OM_Observation",
+  "unitOfMeasurement": {
+    "name": "mqtt connection status",
+    "symbol": "srfg.prusa3d.mqtt",
+    "definition": "connection-status"
+      },
+  "Thing":{"@iot.id":1},
+  "ObservedProperty":
+    {
+      "name": "network information",
+      "description": "mqtt network connection of the printer's controller",
+      "definition": "srfg.prusa3d.mqtt"
+    },
+  "Sensor":{"@iot.id":5}
+}
+
+
+### Prusa events
+
+{
+  "name": "prusa events",
+  "description": "Datastream for printing events",
+  "observationType": "http://www.opengis.net/def/observationType/OGC-OM/2.0/OM_Observation",
+  "unitOfMeasurement": {
+    "name": "printing event",
+    "symbol": "srfg.prusa3d.event",
+    "definition": "json-message"
+      },
+  "Thing":{"@iot.id":1},
+  "ObservedProperty":
+    {
+      "name": "event information",
+      "description": "events occurring while printing",
+      "definition": "srfg.prusa3d.event"
+    },
+  "Sensor":{"@iot.id":5}
+}
