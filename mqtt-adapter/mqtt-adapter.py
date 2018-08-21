@@ -103,7 +103,7 @@ def on_connect(client, userdata, flags, rc):
     # Subscribing in on_connect() means that if we lose the connection and
     # reconnect then subscriptions will be renewed.
     client.subscribe("prusa3d/#")
-    client.subscribe("octoprint/#")
+    # client.subscribe("octoprint/#")
     # client.subscribe("testtopic/#")
     # client.subscribe("#")
 
