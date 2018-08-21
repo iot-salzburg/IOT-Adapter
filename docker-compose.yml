@@ -2,8 +2,8 @@ version: '3.3'
 
 services:
   adapter:
-    image: 127.0.0.1:5001/iot-adapter
-    build: iot-adapter/
+    image: 127.0.0.1:5001/mqtt-adapter
+    build: mqtt-adapter/
 #    env_file:
 #      - .env
 #    ports:

@@ -1,7 +1,7 @@
 FROM python:3.6
 # not using onbuild, because changed code results in installation time
 
-MAINTAINER Johannes Innerbichler <j.innerbichler@gmail.com>
+MAINTAINER Christoph Schranz <christoph.schranz@salzburgresearch.at>
 
 # test internet connection and dns settings. If apt-get update fails, restart
 # docker service, check internet connection and dns settings in /etc/docker/daemon.json

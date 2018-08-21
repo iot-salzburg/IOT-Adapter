@@ -1,0 +1,31 @@
+{
+    "topics": [
+        "cam1/motioneye",
+        "cam2/motioneye",
+        "il032/cpu",
+        "il032/cpu-temp",
+        "il032/fanstatus",
+        "il032/mem",
+        "il032/net-eth0",
+        "octoprint/temperature/bed",
+        "octoprint/temperature/tool0",
+        "prusa3d/event/CaptureDone",
+        "prusa3d/event/CaptureStart",
+        "prusa3d/event/ClientClosed",
+        "prusa3d/event/PrintResumed",
+        "prusa3d/event/PrinterStateChanged",
+        "prusa3d/event/ZChange",
+        "prusa3d/mqtt",
+        "prusa3d/progress/printing",
+        "prusa3d/progress/slicing",
+        "prusa3d/temperature/bed",
+        "prusa3d/temperature/tool0",
+        "rasp02/cpu",
+        "rasp02/cpu-temp",
+        "rasp02/mem",
+        "rasp02/net-wlan0",
+        "rasp05/airquality",
+        "testtopic/testval",
+        "testtopic2/testval2"
+    ]
+}

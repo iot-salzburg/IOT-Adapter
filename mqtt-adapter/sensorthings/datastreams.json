@@ -1,5 +1,10 @@
 {
-    "rasp05/filaDistance": 1,
+    "octoprint.bed.temp.target": 1,
+    "octoprint.bed.temp.actual": 2,
+    "octoprint.nozzle0.temp.target": 3,
+    "octoprint.nozzle0.temp.actual": 4,
+
+
     "rasp05/SkidRate": 2,
     "rasp05/SkidCount": 3,
     "rasp06/temp": 4,

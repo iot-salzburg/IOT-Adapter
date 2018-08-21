@@ -30,7 +30,7 @@ __email__ = "christoph.schranz@salzburgresearch.at"
 __status__ = "Development"
 
 MQTT_BROKER = "il050.salzburgresearch.at"
-MQTT_BROKER = "192.168.48.81"
+# MQTT_BROKER = "192.168.48.81"
 
 
 LOGSTASH_HOST = os.getenv('LOGSTASH_HOST', 'il081')
@@ -45,13 +45,13 @@ KAFKA_GROUP_ID = "mqtt-adapter"
 # The mapping between incoming and outgoing metrics is defined by
 # the json file located on:
 dir_path = os.path.dirname(os.path.realpath(__file__))
-datastream_map = os.path.join(dir_path, "datastreams.json")
-blacklist_map = os.path.join(dir_path, "blacklist.json")
+datastream_file = os.path.join(dir_path, "sensorthings", "datastreams.json")
+topics_list_file = os.path.join(dir_path, "sensorthings", "topics_list.json")
 
-with open(datastream_map) as ds_file:
+with open(datastream_file) as ds_file:
     DATASTREAM_MAPPING = json.load(ds_file)
-with open(blacklist_map) as bl_file:
-    BLACKLIST = json.load(bl_file)
+with open(topics_list_file) as topics_file:
+    MQTT_TOPICS = json.load(topics_file)["topics"]
 
 # Define Kafka Producer
 conf = {'bootstrap.servers': BOOTSTRAP_SERVERS}
@@ -92,7 +92,7 @@ def define_mqtt_statemachine():
 
 def init_datastreams():
     for datastream, _id in DATASTREAM_MAPPING.items():
-        print(datastream, _id)
+        pass
 
 
 def on_connect(client, userdata, flags, rc):
@@ -101,9 +101,10 @@ def on_connect(client, userdata, flags, rc):
     logger.info("Connected with result code " + str(rc))
     # Subscribing in on_connect() means that if we lose the connection and
     # reconnect then subscriptions will be renewed.
-    # client.subscribe("prusa3d/#")
+    #client.subscribe("prusa3d/#")
     #client.subscribe("octoprint/#")
-    client.subscribe("testtopic/#")
+    #client.subscribe("testtopic/#")
+    client.subscribe("#")
 
 
 def on_disconnect(client, userdata, rc):
@@ -125,16 +126,28 @@ def on_message(client, userdata, msg):
     """
     
     print("New MQTT message: {}, {}".format(msg.topic, msg.payload))
+    if msg.topic not in MQTT_TOPICS:
+        MQTT_TOPICS.append(msg.topic)
+        with open(topics_list_file, "w") as topics_file:
+            json.dump({"topics": sorted(MQTT_TOPICS)}, topics_file, indent=4, sort_keys=True)
+            logger.info("Found new mqtt topic: {} and saved it to file".format(msg.topic))
 
+    messages = list()
     message = dict()
     if msg.topic.startswith("testtopic"):
         message["quantity"] = msg.topic.replace("/", ".")
         message["result"] = float(msg.payload)
         message["phenomenonTime"] = datetime.now().replace(tzinfo=pytz.UTC).isoformat()
         message["phenomenonTime"] = datetime.now().replace(tzinfo=pytz.UTC).isoformat()
+        messages.append(message)
 
+    if msg.topic.startswith("octoprint/temperature"):
+        messages = parse_octoprint_temperature(msg)
 
-    publish_message(message)
+    if messages is list():
+        return
+    print(messages)
+    publish_message(messages)
 
     # datapoints = mqtt_to_sensorthings(msg)
     #
@@ -157,6 +170,31 @@ def on_message(client, userdata, msg):
         #     publish_message(message)
         #     logger.debug("\tSent:\t%-25s %-40s%-10s" % (datapoint["quantity"], datapoint["ts"], datapoint["value"]))
         #     time.sleep(0)
+
+
+def parse_octoprint_temperature(msg):
+    message = dict()
+
+    payload = json.loads(msg.payload.decode("utf-8"))
+    message["phenomenonTime"] = convert_timestamp(payload["_timestamp"])
+    message["resultTime"] = datetime.now().replace(tzinfo=pytz.UTC).isoformat()
+
+    messages = list([message, message])
+    if msg.topic == "octoprint/temperature/bed":
+        messages[0]['Datastream'] = "octoprint.bed.temp.target"
+        messages[1]['Datastream'] = "octoprint.bed.temp.actual"
+    elif msg.topic == "octoprint/temperature/tool0":
+        messages[0]['Datastream'] = "octoprint.nozzle0.temp.target"
+        messages[1]['Datastream'] = "octoprint.nozzle0.temp.actual"
+    else:
+        logger.warning("Octoprint quantity not implemnted yet")
+
+    messages[0]["result"] = payload["target"]
+    messages[1]["result"] = payload["actual"]
+
+    return messages
+
+
 
 
 def mqtt_to_sensorthings(msg):
@@ -227,14 +265,11 @@ def convert_datastream_id(datapoint):
     :return: updated datapoint dictionary including timestamp, value and new quantity
     :rtype: dictionary. None if datapoint is ignored.
     """
-    try:
+    if datapoint["quantity"] in DATASTREAM_MAPPING.keys():
+        print('datapoint["quantity"]: {}'.format(datapoint["quantity"]))
         datapoint["quantity"] = DATASTREAM_MAPPING[datapoint["quantity"]]
+        print('datapoint["quantity"]: {}'.format(datapoint["quantity"]))
         return datapoint
-    except KeyError:
-        if datapoint["quantity"] not in BLACKLIST.keys():
-            pass
-            # logger.warning("Ignoring {}".format(datapoint))
-        pass
     return None
 
 
@@ -283,7 +318,7 @@ def convert_timestamp(ts_in, form="ISO8601"):
 
 
 # noinspection PyBroadException
-def publish_message(message):
+def publish_message(messages):
     """
     Publish the canonical data format (Version: i-maintenance first iteration)
     to the Kafka Bus.
@@ -292,16 +327,17 @@ def publish_message(message):
     :param message: dictionary with 4 keywords
     :return: None
     """
-    print("HAALLO")
+    print("sending prevented")
     return
-    try:
-        producer.produce(KAFKA_TOPIC, json.dumps(message).encode('utf-8'),
-                         key=str(message['Datastream']['@iot.id']).encode('utf-8'))
-        producer.poll(0)  # using poll(0), as Eden Hill mentions it avoids BufferError: Local: Queue full
-        # producer.flush() poll should be faster here
-        # print("sent:", str(message), str(message['Datastream']['@iot.id']).encode('utf-8'))
-    except:
-        logger.exception("Exception while sending: {} \non kafka topic: {}".format(message, KAFKA_TOPIC))
+    for message in messages:
+        try:
+            producer.produce(KAFKA_TOPIC, json.dumps(message).encode('utf-8'),
+                             key=str(message['Datastream']['@iot.id']).encode('utf-8'))
+            producer.poll(0)  # using poll(0), as Eden Hill mentions it avoids BufferError: Local: Queue full
+            # producer.flush() poll should be faster here
+            # print("sent:", str(message), str(message['Datastream']['@iot.id']).encode('utf-8'))
+        except:
+            logger.exception("Exception while sending: {} \non kafka topic: {}".format(message, KAFKA_TOPIC))
 
 
 if __name__ == '__main__':
