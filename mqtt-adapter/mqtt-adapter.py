@@ -40,7 +40,7 @@ LOGSTASH_PORT = int(os.getenv('LOGSTASH_PORT', '5000'))
 # topics and servers should be of the form: "topic1,topic2,..."
 KAFKA_TOPIC_metric = "dtz.sensorthings"
 KAFKA_TOPIC_logging = "dtz.logging"
-BOOTSTRAP_SERVERS = 'il081:9093,il082:9094,il083:9095'
+BOOTSTRAP_SERVERS = '192.168.48.81:9093,192.168.48.82:9094,192.168.48.83:9095'
 KAFKA_GROUP_ID = "mqtt-adapter"
 
 # The mapping between incoming and outgoing metrics is defined by

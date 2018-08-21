@@ -20,9 +20,10 @@ RUN pip install confluent-kafka==${CONFLUENT_KAFKA_VERSION}
 
 
 # Copy the content of this folder into the hosts home directory.
-ADD . .
+ADD requirements.txt .
 RUN pip install -r requirements.txt
 
+ADD . .
 
 # setup proper configuration
 ENV PYTHONPATH .
