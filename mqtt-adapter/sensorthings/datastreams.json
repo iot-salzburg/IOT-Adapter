@@ -1,4 +1,5 @@
 {
+    "testtopic.testval": {"id": 0},
     "prusa3d.bed.temp.target": {"id": 2},
     "prusa3d.bed.temp.actual": {"id": 3},
     "prusa3d.tool0.temp.target": {"id": 4},

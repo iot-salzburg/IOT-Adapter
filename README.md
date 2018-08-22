@@ -1,13 +1,14 @@
-# IOT-Adapter
-Connecting MQTT services with the i-Maintenance Messaging System.
+# MQTT-Adapter
+Connecting MQTT services with the Messaging System.
+This component subscribes to topics from the Internet of Things
+protocol MQTT and forwards them to the messaging system which uses
+Apache Kafka.
+Therefore both services must be running:
+* [MQTT-broker](https://github.com/iot-salzburg/mqtt-adapter)
+* [messaging-system](https://github.com/iot-salzburg/messaging-system)
 
 
-
-This component subscribes to topics from the Internet of Things Protokoll MQTT and
-forwards them to the the Apache Kafka message broker.
-
-
-The Kafka Adapter based on the components:
+The MQTT Adapter is based on the components:
 * Paho-MQTT Messaging Client, [paho.mqtt](https://pypi.python.org/pypi/paho-mqtt/1.3.1) version **1.3.1**
 * Kafka Client [librdkafka](https://github.com/geeknam/docker-confluent-python) version **0.11.1**
 * Python Kafka module [confluent-kafka-python](https://github.com/confluentinc/confluent-kafka-python) version **0.9.1.2**
