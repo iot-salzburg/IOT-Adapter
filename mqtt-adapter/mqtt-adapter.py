@@ -33,16 +33,17 @@ MQTT_BROKER = "il050.salzburgresearch.at"
 # MQTT_BROKER = "192.168.48.81"
 
 
-LOGSTASH_HOST = os.getenv('LOGSTASH_HOST', 'il081')
+LOGSTASH_HOST = os.getenv('LOGSTASH_HOST', 'il081')  # TODO not implemented yet
 LOGSTASH_PORT = int(os.getenv('LOGSTASH_PORT', '5000'))
 
 # kafka parameters
 # topics and servers should be of the form: "topic1,topic2,..."
 KAFKA_TOPIC_metric = "dtz.sensorthings"
 KAFKA_TOPIC_logging = "dtz.logging"
-BOOTSTRAP_SERVERS = '192.168.48.81:9093,192.168.48.82:9094,192.168.48.83:9095'
+BOOTSTRAP_SERVERS = '192.168.48.81:9093,192.168.48.82:9094'  # ,192.168.48.83:9095'
 KAFKA_GROUP_ID = "mqtt-adapter"
 
+# The mapping between incoming and outgoing metrics is defined by
 # The mapping between incoming and outgoing metrics is defined by
 # the json file located on:
 dir_path = os.path.dirname(os.path.realpath(__file__))
@@ -54,18 +55,23 @@ with open(datastream_file) as ds_file:
 with open(topics_list_file) as topics_file:
     MQTT_TOPICS = json.load(topics_file)["topics"]
 
-# Define Kafka Producer
+# Define Kafka Producer and test it
 conf = {'bootstrap.servers': BOOTSTRAP_SERVERS}
 producer = Producer(**conf)
+producer.produce("test-topic", "testing client, time: {}".format(
+    datetime.utcnow().replace(tzinfo=pytz.UTC).isoformat()))
 
 # setup logging
 logger = logging.getLogger('mqtt-adapter.logging')
 logger.setLevel(os.getenv('LOG_LEVEL', logging.INFO))
 console_logger = logging.StreamHandler(stream=sys.stdout)
 console_logger.setFormatter(logging.Formatter(logging.BASIC_FORMAT))
-logstash_handler = TCPLogstashHandler(host=LOGSTASH_HOST, port=LOGSTASH_PORT, version=1)
-[logger.addHandler(l) for l in [console_logger, logstash_handler]]
-logger.info('Sending logstash to %s:%d', logstash_handler.host, logstash_handler.port)
+#logstash_handler = TCPLogstashHandler(host=LOGSTASH_HOST, port=LOGSTASH_PORT, version=1)
+#[logger.addHandler(l) for l in [console_logger, logstash_handler]]
+#logger.info('Sending logstash to %s:%d', logstash_handler.host, logstash_handler.port)
+logger.addHandler(console_logger)
+
+logger.info("Kafka producer was created")
 
 ch = logging.StreamHandler(sys.stdout)
 ch.setLevel(logging.DEBUG)
@@ -104,7 +110,7 @@ def on_connect(client, userdata, flags, rc):
     # reconnect then subscriptions will be renewed.
     client.subscribe("prusa3d/#")
     # client.subscribe("octoprint/#")
-    # client.subscribe("testtopic/#")
+    client.subscribe("testtopic/#")
     # client.subscribe("#")
 
 
@@ -126,7 +132,7 @@ def on_message(client, userdata, msg):
     :return:
     """
     
-    logger.debug("New MQTT message: {}, {}".format(msg.topic, "-"))  # msg.payload))
+    logger.info("New MQTT message: {}, {}".format(msg.topic, "-"))  # msg.payload))
     if msg.topic not in MQTT_TOPICS:
         MQTT_TOPICS.append(msg.topic)
         with open(topics_list_file, "w") as topics_file:
@@ -136,10 +142,10 @@ def on_message(client, userdata, msg):
     messages = list()
     if msg.topic.startswith("testtopic"):
         message = dict()
-        message["quantity"] = msg.topic.replace("/", ".")
+        message["Datastream"] = msg.topic.replace("/", ".")
         message["result"] = float(msg.payload)
-        message["phenomenonTime"] = datetime.now().replace(tzinfo=pytz.UTC).isoformat()
-        message["phenomenonTime"] = datetime.now().replace(tzinfo=pytz.UTC).isoformat()
+        message["phenomenonTime"] = datetime.utcnow().replace(tzinfo=pytz.UTC).isoformat()
+        message["phenomenonTime"] = datetime.utcnow().replace(tzinfo=pytz.UTC).isoformat()
         messages.append(message)
 
     elif msg.topic.startswith("octoprint/temperature"):
@@ -157,7 +163,7 @@ def on_message(client, userdata, msg):
 
     if messages in [None, list()]:
         return
-    for message in messages:
+    for message in list(messages):
         logger.debug("Trying to publish: {}".format(message["Datastream"]))
         message = convert_datastream_id(message)
         if message:
@@ -172,7 +178,7 @@ def parse_octoprint_temperature(msg):
         if direction in payload.keys():
             message = dict()
             message["phenomenonTime"] = convert_timestamp(payload["_timestamp"])
-            message["resultTime"] = datetime.now().replace(tzinfo=pytz.UTC).isoformat()
+            message["resultTime"] = datetime.utcnow().replace(tzinfo=pytz.UTC).isoformat()
             message["result"] = payload[direction]
             if msg.topic == "octoprint/temperature/bed":
                 message["Datastream"] = "prusa3d.bed.temp.{}".format(direction)  # TODO is octoprint and prusa3d equal
@@ -195,7 +201,7 @@ def parse_prusa3d_temperature(msg):
         if direction in payload.keys():
             message = dict()
             message["phenomenonTime"] = convert_timestamp(payload["_timestamp"])
-            message["resultTime"] = datetime.now().replace(tzinfo=pytz.UTC).isoformat()
+            message["resultTime"] = datetime.utcnow().replace(tzinfo=pytz.UTC).isoformat()
             message["result"] = payload[direction]
             if msg.topic == "prusa3d/temperature/bed":
                 message["Datastream"] = "prusa3d.bed.temp.{}".format(direction)
@@ -214,8 +220,8 @@ def parse_prusa3d_progress(msg):
     message = dict()
     payload = json.loads(msg.payload.decode("utf-8"))
     message["phenomenonTime"] = convert_timestamp(payload["_timestamp"])
-    del(payload["_timestamp"])
-    message["resultTime"] = datetime.now().replace(tzinfo=pytz.UTC).isoformat()
+    # del(payload["_timestamp"])
+    message["resultTime"] = datetime.utcnow().replace(tzinfo=pytz.UTC).isoformat()
     message["message"] = payload
     message["Datastream"] = "prusa3d.progress.status"
     return [message]
@@ -227,8 +233,8 @@ def parse_prusa3d_mqtt(msg):
     try:
         message["phenomenonTime"] = convert_timestamp(payload["_timestamp"])
     except TypeError:
-        message["phenomenonTime"] = datetime.now().replace(tzinfo=pytz.UTC).isoformat()
-    message["resultTime"] = datetime.now().replace(tzinfo=pytz.UTC).isoformat()
+        message["phenomenonTime"] = datetime.utcnow().replace(tzinfo=pytz.UTC).isoformat()
+    message["resultTime"] = datetime.utcnow().replace(tzinfo=pytz.UTC).isoformat()
     message["message"] = payload
     message["Datastream"] = "prusa3d.mqtt.status"
     return [message]
@@ -243,10 +249,10 @@ def parse_prusa3d_event(msg):
     payload = json.loads(msg.payload.decode("utf-8"))
     try:
         message["phenomenonTime"] = convert_timestamp(payload["_timestamp"])
-        del(payload["_timestamp"])
+        # del(payload["_timestamp"])
     except KeyError:
-        message["phenomenonTime"] = datetime.now().replace(tzinfo=pytz.UTC).isoformat()
-    message["resultTime"] = datetime.now().replace(tzinfo=pytz.UTC).isoformat()
+        message["phenomenonTime"] = datetime.utcnow().replace(tzinfo=pytz.UTC).isoformat()
+    message["resultTime"] = datetime.utcnow().replace(tzinfo=pytz.UTC).isoformat()
     message["message"] = payload
     message["Datastream"] = "prusa3d.event.status"
     return [message]
@@ -371,7 +377,7 @@ def convert_timestamp(ts_in, form="ISO8601"):
         else:
             logger.warning("Unexpected timestamp format: {} ({})".format(ts_in, type(ts_in)))
     if form == "ISO8601":
-        return datetime.fromtimestamp(float(ts_in), pytz.UTC).isoformat()
+        return datetime.utcfromtimestamp(ts_in).replace(tzinfo=pytz.UTC).isoformat()
     elif form in ["UNIX", "Unix", "unix"]:
         return ts_in
     else:
@@ -394,7 +400,7 @@ def publish_message(message):
                          key=str(message['Datastream']['@iot.id']).encode('utf-8'))
         producer.poll(0)  # using poll(0), as Eden Hill mentions it avoids BufferError: Local: Queue full
         # producer.flush() poll should be faster here
-        print("sent:", str(message['Datastream']['@iot.id']).encode('utf-8'), str(message))
+        logger.info("sent {}: {}".format(message['Datastream']['@iot.id'], message))
     except Exception as e:
         logger.exception("Exception while sending metric: {} \non kafka topic: {}\n Error: {}".
                          format(message, KAFKA_TOPIC_metric, e))
