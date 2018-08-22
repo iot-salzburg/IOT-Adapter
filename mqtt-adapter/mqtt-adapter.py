@@ -69,7 +69,6 @@ console_logger.setFormatter(logging.Formatter(logging.BASIC_FORMAT))
 #logstash_handler = TCPLogstashHandler(host=LOGSTASH_HOST, port=LOGSTASH_PORT, version=1)
 #[logger.addHandler(l) for l in [console_logger, logstash_handler]]
 #logger.info('Sending logstash to %s:%d', logstash_handler.host, logstash_handler.port)
-logger.addHandler(console_logger)
 
 logger.info("Kafka producer was created")
 
@@ -132,7 +131,7 @@ def on_message(client, userdata, msg):
     :return:
     """
     
-    logger.info("New MQTT message: {}, {}".format(msg.topic, "-"))  # msg.payload))
+    logger.debug("New MQTT message: {}, {}".format(msg.topic, "-"))  # msg.payload))
     if msg.topic not in MQTT_TOPICS:
         MQTT_TOPICS.append(msg.topic)
         with open(topics_list_file, "w") as topics_file:
@@ -400,7 +399,7 @@ def publish_message(message):
                          key=str(message['Datastream']['@iot.id']).encode('utf-8'))
         producer.poll(0)  # using poll(0), as Eden Hill mentions it avoids BufferError: Local: Queue full
         # producer.flush() poll should be faster here
-        logger.info("sent {}: {}".format(message['Datastream']['@iot.id'], message))
+        logger.info("sent {}".format(message['Datastream']['@iot.id']))
     except Exception as e:
         logger.exception("Exception while sending metric: {} \non kafka topic: {}\n Error: {}".
                          format(message, KAFKA_TOPIC_metric, e))

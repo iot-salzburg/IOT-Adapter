@@ -9,7 +9,7 @@ services:
 #    ports:
 #      - "3030:3030"
     networks:
-      - iot-adapter
+      - mqtt-adapter
     deploy:
       placement:
         constraints: [node.role == worker]
@@ -27,4 +27,4 @@ services:
 
 # Network
 networks:
-  iot-adapter:
+  mqtt-adapter:
