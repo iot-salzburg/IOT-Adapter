@@ -16,6 +16,7 @@ import os
 from datetime import datetime
 import json
 import logging
+import socket
 
 import pytz
 # confluent_kafka is based on librdkafka, details in requirements.txt
@@ -24,23 +25,22 @@ import paho.mqtt.client as mqtt
 from logstash import TCPLogstashHandler
 
 __author__ = "Salzburg Research"
-__version__ = "1.2"
-__date__ = "20 August 2017"
+__version__ = "1.3"
+__date__ = "03 September 2017"
 __email__ = "christoph.schranz@salzburgresearch.at"
 __status__ = "Development"
 
-MQTT_BROKER = "il050.salzburgresearch.at"
-# MQTT_BROKER = "192.168.48.81"
+# MQTT_BROKER = "il050.salzburgresearch.at"
+MQTT_BROKER = "il081"
 
-
-LOGSTASH_HOST = os.getenv('LOGSTASH_HOST', 'il081')  # TODO not implemented yet
-LOGSTASH_PORT = int(os.getenv('LOGSTASH_PORT', '5000'))
+SENSORTHINGS_HOST = "il081"
+SENSORTHINGS_PORT = "8084"
 
 # kafka parameters
 # topics and servers should be of the form: "topic1,topic2,..."
 KAFKA_TOPIC_metric = "dtz.sensorthings"
 KAFKA_TOPIC_logging = "dtz.logging"
-BOOTSTRAP_SERVERS = '192.168.48.81:9093,192.168.48.82:9094'  # ,192.168.48.83:9095'
+BOOTSTRAP_SERVERS = 'il081:9092,il082:9092,il083:9092'  # ,192.168.48.83:9095'
 KAFKA_GROUP_ID = "mqtt-adapter"
 
 # The mapping between incoming and outgoing metrics is defined by
@@ -60,23 +60,7 @@ conf = {'bootstrap.servers': BOOTSTRAP_SERVERS}
 producer = Producer(**conf)
 producer.produce("test-topic", "testing client, time: {}".format(
     datetime.utcnow().replace(tzinfo=pytz.UTC).isoformat()))
-
-# setup logging
-logger = logging.getLogger('mqtt-adapter.logging')
-logger.setLevel(os.getenv('LOG_LEVEL', logging.INFO))
-console_logger = logging.StreamHandler(stream=sys.stdout)
-console_logger.setFormatter(logging.Formatter(logging.BASIC_FORMAT))
-#logstash_handler = TCPLogstashHandler(host=LOGSTASH_HOST, port=LOGSTASH_PORT, version=1)
-#[logger.addHandler(l) for l in [console_logger, logstash_handler]]
-#logger.info('Sending logstash to %s:%d', logstash_handler.host, logstash_handler.port)
-
-logger.info("Kafka producer was created")
-
-ch = logging.StreamHandler(sys.stdout)
-ch.setLevel(logging.DEBUG)
-formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-ch.setFormatter(formatter)
-logger.addHandler(ch)
+print("Kafka producer was created, ready to stream")
 
 
 def define_mqtt_statemachine():
@@ -92,19 +76,20 @@ def define_mqtt_statemachine():
     client.on_message = on_message
 
     client.connect(MQTT_BROKER, 1883, 60)
-    logger.info("Connection to {} on port {} established".format(MQTT_BROKER, 1883))
+    kafka_logger("Connection to {} on port {} established".format(MQTT_BROKER, 1883), level="info")
     client.loop_forever()
 
 
 def init_datastreams():
     for datastream, _id in DATASTREAM_MAPPING.items():
+        # TODO synch with sensorthings
         pass
 
 
 def on_connect(client, userdata, flags, rc):
     """Report if connection to MQTT_BROKER is established
     and subscribe to all topics. MQTT subroutine"""
-    logger.info("Connected with result code " + str(rc))
+    kafka_logger("Connected with result code " + str(rc), level="info")
     # Subscribing in on_connect() means that if we lose the connection and
     # reconnect then subscriptions will be renewed.
     client.subscribe("prusa3d/#")
@@ -115,8 +100,8 @@ def on_connect(client, userdata, flags, rc):
 
 def on_disconnect(client, userdata, rc):
     """Reporting if connection to MQTT_BROKER is lost. MQTT subroutine"""
-    logger.warning("Disconnect, reason: " + str(rc))
-    logger.warning("Disconnect, reason: " + str(client))
+    kafka_logger("Disconnect, reason: " + str(rc), level="warning")
+    kafka_logger("Disconnect, reason: " + str(client), level="warning")
 
 
 def on_message(client, userdata, msg):
@@ -130,13 +115,13 @@ def on_message(client, userdata, msg):
     :param msg: Incoming raw MQTT message
     :return:
     """
-    
-    logger.debug("New MQTT message: {}, {}".format(msg.topic, "-"))  # msg.payload))
+
+    # kafka_logger("New MQTT message: {}, {}".format(msg.topic, "-"), level="debug")  # msg.payload))
     if msg.topic not in MQTT_TOPICS:
         MQTT_TOPICS.append(msg.topic)
-        with open(topics_list_file, "w") as topics_file:
-            json.dump({"topics": sorted(MQTT_TOPICS)}, topics_file, indent=4, sort_keys=True)
-            logger.info("Found new mqtt topic: {} and saved it to file".format(msg.topic))
+        with open(topics_list_file, "w") as topics:
+            json.dump({"topics": sorted(MQTT_TOPICS)}, topics, indent=4, sort_keys=True)
+            kafka_logger("Found new mqtt topic: {} and saved it to file".format(msg.topic), level="info")
 
     messages = list()
     if msg.topic.startswith("testtopic"):
@@ -144,11 +129,12 @@ def on_message(client, userdata, msg):
         message["Datastream"] = msg.topic.replace("/", ".")
         message["result"] = float(msg.payload)
         message["phenomenonTime"] = datetime.utcnow().replace(tzinfo=pytz.UTC).isoformat()
-        message["phenomenonTime"] = datetime.utcnow().replace(tzinfo=pytz.UTC).isoformat()
+        message["resultTime"] = datetime.utcnow().replace(tzinfo=pytz.UTC).isoformat()
         messages.append(message)
 
     elif msg.topic.startswith("octoprint/temperature"):
-        messages = parse_octoprint_temperature(msg)
+        # messages = parse_octoprint_temperature(msg)
+        pass
     elif msg.topic.startswith("prusa3d/temperature"):
         messages = parse_prusa3d_temperature(msg)
     elif msg.topic.startswith("prusa3d/progress"):
@@ -158,18 +144,21 @@ def on_message(client, userdata, msg):
     elif msg.topic.startswith("prusa3d/event"):
         messages = parse_prusa3d_event(msg)
     else:
-        logger.warning("Found unparsed message: {}: {}".format(msg.topic, msg.payload))
+        kafka_logger("Found unparsed message: {}: {}".format(msg.topic, msg.payload), level="warning")
 
     if messages in [None, list()]:
         return
     for message in list(messages):
-        logger.debug("Trying to publish: {}".format(message["Datastream"]))
+        # kafka_logger("Trying to publish: {}".format(message["Datastream"]), level="debug")
+        # print("Received: {}".format(message))
+
         message = convert_datastream_id(message)
         if message:
             publish_message(message)
 
 
 def parse_octoprint_temperature(msg):
+    # octoprint and prusa3d equal because there could be a bug in the plugin, ignore octoprint messages
     payload = json.loads(msg.payload.decode("utf-8"))
 
     messages = list()
@@ -180,14 +169,14 @@ def parse_octoprint_temperature(msg):
             message["resultTime"] = datetime.utcnow().replace(tzinfo=pytz.UTC).isoformat()
             message["result"] = payload[direction]
             if msg.topic == "octoprint/temperature/bed":
-                message["Datastream"] = "prusa3d.bed.temp.{}".format(direction)  # TODO is octoprint and prusa3d equal
+                message["Datastream"] = "prusa3d.bed.temp.{}".format(direction)
             elif msg.topic == "octoprint/temperature/tool0":
-                message["Datastream"] = "prusa3d.tool0.temp.{}".format(direction)  # TODO is octoprint and prusa3d equal
+                message["Datastream"] = "prusa3d.tool0.temp.{}".format(direction)
             else:
-                logger.warning("Octoprint quantity not implemented.")
+                kafka_logger("Octoprint quantity not implemented.", level="warning")
             messages.append(message)
         else:
-            logger.warning("Octoprint payload direction not implemented.")
+            kafka_logger("Octoprint payload direction not implemented.", level="warning")
 
     return messages
 
@@ -207,10 +196,10 @@ def parse_prusa3d_temperature(msg):
             elif msg.topic == "prusa3d/temperature/tool0":
                 message["Datastream"] = "prusa3d.tool0.temp.{}".format(direction)
             else:
-                logger.warning("Octoprint quantity not implemented.")
+                kafka_logger("Octoprint quantity not implemented.", level="warning")
             messages.append(message)
         else:
-            logger.warning("Octoprint payload direction not implemented.")
+            kafka_logger("Octoprint payload direction not implemented.", level="warning")
 
     return messages
 
@@ -221,7 +210,8 @@ def parse_prusa3d_progress(msg):
     message["phenomenonTime"] = convert_timestamp(payload["_timestamp"])
     # del(payload["_timestamp"])
     message["resultTime"] = datetime.utcnow().replace(tzinfo=pytz.UTC).isoformat()
-    message["message"] = payload
+    message["result"] = None
+    message["parameters"] = payload
     message["Datastream"] = "prusa3d.progress.status"
     return [message]
 
@@ -234,7 +224,8 @@ def parse_prusa3d_mqtt(msg):
     except TypeError:
         message["phenomenonTime"] = datetime.utcnow().replace(tzinfo=pytz.UTC).isoformat()
     message["resultTime"] = datetime.utcnow().replace(tzinfo=pytz.UTC).isoformat()
-    message["message"] = payload
+    message["result"] = None
+    message["parameters"] = payload
     message["Datastream"] = "prusa3d.mqtt.status"
     return [message]
 
@@ -252,7 +243,8 @@ def parse_prusa3d_event(msg):
     except KeyError:
         message["phenomenonTime"] = datetime.utcnow().replace(tzinfo=pytz.UTC).isoformat()
     message["resultTime"] = datetime.utcnow().replace(tzinfo=pytz.UTC).isoformat()
-    message["message"] = payload
+    message["result"] = None
+    message["parameters"] = payload
     message["Datastream"] = "prusa3d.event.status"
     return [message]
 
@@ -268,8 +260,8 @@ def mqtt_to_sensorthings(msg):
     datapoint["quantity"] = msg.topic
     try:
         payload = json.loads(msg.payload.decode("utf-8"))
-    except:
-        logger.warning("Couldn't parse message")
+    except Exception:
+        kafka_logger("Couldn't parse message: {}, {}".format(msg, Exception), level="warning")
         return
 
     if type(payload) in [type(0), type(0.0)]:
@@ -289,7 +281,7 @@ def mqtt_to_sensorthings(msg):
                     datapoint["value"] = payload[key]
             datapoints = list([datapoint])
         except:
-            logger.error("Could not parse: {}".format(payload))
+            kafka_logger("Could not parse: {}".format(payload), level="warning")
             return None
     return datapoints
 
@@ -327,14 +319,22 @@ def convert_datastream_id(message):
     """
 
     if not isinstance(message["Datastream"], str):
-        logger.error("Bad instance: {}".format(message))
+        kafka_logger("Bad instance: {}".format(message), level="error")
         return None
     if message["Datastream"] in DATASTREAM_MAPPING.keys():
         iot_id = DATASTREAM_MAPPING[message["Datastream"]]["id"]
-        message["Datastream"] = {"@iot.id": iot_id}
+        try:
+            uri = "http://{}:{}/v1.0/Datastreams({})".format(SENSORTHINGS_HOST,
+                                                             SENSORTHINGS_PORT, iot_id)
+        except Exception:
+            kafka_logger(Exception, level="debug")
+            uri = ""
+        message["Datastream"] = {"@iot.id": iot_id,
+                                 "name": message["Datastream"],
+                                 "URI": uri}
         return message
     else:
-        logger.warning("Datastream not listed: {}".format(message["Datastream"]))
+        kafka_logger("Datastream not listed: {}".format(message["Datastream"]), level="warning")
         print(message)
         return None
 
@@ -374,13 +374,13 @@ def convert_timestamp(ts_in, form="ISO8601"):
         elif ts_len in [16, 15]:
             ts_in = float(ts_in) / 1000 / 1000
         else:
-            logger.warning("Unexpected timestamp format: {} ({})".format(ts_in, type(ts_in)))
+            kafka_logger("Unexpected timestamp format: {} ({})".format(ts_in, type(ts_in)), level="warning")
     if form == "ISO8601":
         return datetime.utcfromtimestamp(ts_in).replace(tzinfo=pytz.UTC).isoformat()
     elif form in ["UNIX", "Unix", "unix"]:
         return ts_in
     else:
-        logger.warning("Invalid date format specified: {}".format(form))
+        kafka_logger("Invalid date format specified: {}".format(form), level="warning")
 
 
 # noinspection PyBroadException
@@ -390,41 +390,46 @@ def publish_message(message):
     to the Kafka Bus.
 
     Keyword argument:
-    :param message: dictionary with 4 keywords
+    :param message: dictionary with 4 keywords and optional "parameters"
     :return: None
     """
-
     try:
         producer.produce(KAFKA_TOPIC_metric, json.dumps(message).encode('utf-8'),
-                         key=str(message['Datastream']['@iot.id']).encode('utf-8'))
-        producer.poll(0)  # using poll(0), as Eden Hill mentions it avoids BufferError: Local: Queue full
-        # producer.flush() poll should be faster here
-        logger.info("sent {}".format(message['Datastream']['@iot.id']))
-    except Exception as e:
-        logger.exception("Exception while sending metric: {} \non kafka topic: {}\n Error: {}".
-                         format(message, KAFKA_TOPIC_metric, e))
-
-
-def publish_message_logging(message):
-    """
-    Publish the canonical data format (Version: i-maintenance first iteration)
-    to the Kafka Bus.
-
-    Keyword argument:
-    :param message: dictionary with 4 keywords
-    :return: None
-    """
-    print("sending prevented")
-    return
-    try:
-        producer.produce(KAFKA_TOPIC_logging, json.dumps(message).encode('utf-8'),
                          key=str(message['Datastream']).encode('utf-8'))
         producer.poll(0)  # using poll(0), as Eden Hill mentions it avoids BufferError: Local: Queue full
         # producer.flush() poll should be faster here
         # print("sent:", str(message), str(message['Datastream']['@iot.id']).encode('utf-8'))
     except Exception as e:
-        logger.exception("Exception while sending log: {} \non kafka topic: {}\n Error: {}".
-                         format(message, KAFKA_TOPIC_metric, e))
+        kafka_logger("Exception while sending log: {} \non kafka topic: {}\n Error: {}"
+                     .format(message, KAFKA_TOPIC_metric, e), level="warning")
+
+
+def kafka_logger(payload, level="debug"):
+    """
+    Publish the canonical data format (Version: i-maintenance first iteration)
+    to the Kafka Bus.
+
+    Keyword argument:
+    :param payload: message content as json or string
+    :param level: log-level
+    :return: None
+    """
+    message = {"Datastream": "dtz.mqtt-adapter.logging",
+               "phenomenonTime": datetime.utcnow().replace(tzinfo=pytz.UTC).isoformat(),
+               "result": payload,
+               "level": level,
+               "host": socket.gethostname()}
+
+    print("Level: {} \tMessage: {}".format(level, payload))
+    try:
+        producer.produce(KAFKA_TOPIC_logging, json.dumps(message).encode('utf-8'),
+                         key=str(message['Datastream']).encode('utf-8'))
+        producer.poll(0)  # using poll(0), as Eden Hill mentions it avoids BufferError: Local: Queue full
+        # producer.flush() poll should be faster here
+    except Exception as e:
+        print("Exception while sending metric: {} \non kafka topic: {}\n Error: {}"
+              .format(message, KAFKA_TOPIC_logging, e))
+
 
 if __name__ == '__main__':
     define_mqtt_statemachine()

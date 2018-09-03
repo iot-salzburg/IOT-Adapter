@@ -7,18 +7,6 @@
 
     "prusa3d.progress.status": {"id": 7},
     "prusa3d.mqtt.status": {"id": 8},
-    "prusa3d.event.status": {"id": 9},
+    "prusa3d.event.status": {"id": 9}
 
-    "rasp05/SkidRate": 2,
-    "rasp05/SkidCount": 3,
-    "rasp06/temp": 4,
-    "rasp02/tempBed": 5,
-    "rasp02/tempNozzle": 6,
-    "rasp05/airquality": 7,
-    "rasp02/um2-posZ": 8,
-    "rasp05/filaConsumption": 9,
-
-    "rasp05/movement-detection": 31,
-    "Printing": 32,
-    "rasp05/filaRate": 34
 }
