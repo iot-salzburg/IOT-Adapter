@@ -31,7 +31,7 @@ __email__ = "christoph.schranz@salzburgresearch.at"
 __status__ = "Development"
 
 # MQTT_BROKER = "il050.salzburgresearch.at"
-MQTT_BROKER = "il081"
+MQTT_BROKER = "192.168.48.81"
 
 SENSORTHINGS_HOST = "il081"
 SENSORTHINGS_PORT = "8084"
@@ -40,7 +40,7 @@ SENSORTHINGS_PORT = "8084"
 # topics and servers should be of the form: "topic1,topic2,..."
 KAFKA_TOPIC_metric = "dtz.sensorthings"
 KAFKA_TOPIC_logging = "dtz.logging"
-BOOTSTRAP_SERVERS = 'il081:9092,il082:9092,il083:9092'  # ,192.168.48.83:9095'
+BOOTSTRAP_SERVERS = '192.168.48.81:9092,192.168.48.82:9092,192.168.48.83:9092'  # ,192.168.48.83:9095'
 KAFKA_GROUP_ID = "mqtt-adapter"
 
 # The mapping between incoming and outgoing metrics is defined by

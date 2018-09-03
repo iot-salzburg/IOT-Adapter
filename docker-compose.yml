@@ -24,7 +24,6 @@ services:
       restart_policy:
         condition: on-failure
 
-
 # Network
 networks:
   mqtt-adapter:
