@@ -1,7 +1,7 @@
 # MQTT-Adapter
 Connecting MQTT services with the Messaging System.
 This component subscribes to topics from the Internet of Things
-protocol MQTT and forwards them to the messaging system which uses
+protocol MQTT and forwards them to the messaging system which is based on
 Apache Kafka.
 Therefore both services must be running:
 * [MQTT-broker](https://github.com/iot-salzburg/mqtt-adapter)
@@ -31,10 +31,10 @@ The MQTT Adapter is based on the components:
 
 ## Deployment
 
-The IOT-Adapter uses the optionally Sensorthings to semantically describe
+The MQTT-Adapter uses the optionally Sensorthings to semantically describe
 the forwarded data. The later consumage of the sensor data with the
 suggested [DB-Adapter](https://github.com/i-maintenance/DB-Adapter/)
-works best with a running and feeded [SensorThings](https://github.com/i-maintenance/SensorThingsClient)
+works best with a running and feeded [SensorThings](https://github.com/iot-salzburg)
  Client.
 
 
@@ -43,15 +43,14 @@ works best with a running and feeded [SensorThings](https://github.com/i-mainten
 Using `docker-compose`:
 
 ```bash
-cd /iot-adapter
+git clone https://github.com/iot-salzburg/dtz_mqtt-adapter.git
+cd dtz_mqtt-adapter
 sudo docker-compose up --build -d
-```Trouble-shooting
+```
 
 The flag `-d` stands for running it in background (detached mode):
 
-
 Watch the logs with:
-
 ```bash
 sudo docker-compose logs -f
 ```
@@ -62,49 +61,43 @@ Using `docker stack`:
 
 If not already done, add a regitry instance to register the image
 ```bash
-cd /iot-Adapter
 sudo docker service create --name registry --publish published=5001,target=5000 registry:2
 curl 127.0.0.1:5001/v2/
 ```
 This should output `{}`:
 
 
-If running with docker-coTrouble-shootingmpose works, push the image in order to make the customized image runnable in the stack
+If running with docker-compose works, the stack will start by running:
+
 
 ```bash
-cd ../iot-Adapter
-sudo docker-compose build
-sudo docker-compose push
-```
-
-Actually deploy the service in the stack:
-```bash
-cd ../IOT-Adapter
-sudo docker stack deploy --compose-file docker-compose.yml iot-adapter
+git clone https://github.com/iot-salzburg/dtz_mqtt-adapter.git
+cd dtz_mqtt-adapter
+chmod +x st* sh*
+./start_mqtt-adapter.sh
 ```
 
 
 Watch if everything worked fine with:
 
 ```bash
-sudo docker service ls
-sudo docker stack ps iot-adapter
-sudo docker service logs iot-adapter_adapter -f
+./show-adapter-stats.sh
+docker service logs -f add-mqtt_adapter
 ```
 
 
 ## Configuration
 
-The IOT-Adapter uses a Whitelist (`datastreams.json`) as well as a
-Blacklist (`blacklist.json`). The first one lists any data which should be
-forwarded into the i-Maintenance Messaging System with its corresponding
-SensorThings - Datastream-Id. The later lists sensordata that should be
-ignored by the IOT-Adapter. If data is fetched without being in any of
-these files, a warning message is produced that will be seen if running:
+Right now, the MQTT-Adapter uses the static `datastreams.json` file to
+augment the incoming MQTT messages with metadata stored on the
+sensorthings server.
 
-```bash
-sudo docker service logs iot-adapter_adapter -f
-```
+The things, sensors, observations and datastreams stored in the server
+were created via REST API. More info and the json content for each posted
+instance are in `mqtt-adapter/sensorthings/setUpDatastreams.md`.
+
+In future releases, the registration of instances will be automated to
+provide an out-of-the-box solution for industrial IOT.
 
 
 ## Trouble-shooting
@@ -117,7 +110,7 @@ Restart the service
 or add the file `/etc/docker/daemon.json` with the content:
 ```
 {
-    "dns": [your_dns, "8.8.8.8"]
+    "dns": [your_dns, "8.8.8.8", "8.8.8.4"]
 }
 ```
 where `your_dns` can be found with the command:
