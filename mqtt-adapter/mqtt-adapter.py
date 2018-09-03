@@ -234,9 +234,10 @@ def parse_prusa3d_event(msg):
     # Skip ZChange information as they occur to frequently
     if msg.topic == "prusa3d/event/ZChange":
         return None
-
-    message = dict()
     payload = json.loads(msg.payload.decode("utf-8"))
+    if payload.get("_event") in ["CaptureStart", "CaptureDone"]:
+        return None
+    message = dict()
     try:
         message["phenomenonTime"] = convert_timestamp(payload["_timestamp"])
         # del(payload["_timestamp"])
