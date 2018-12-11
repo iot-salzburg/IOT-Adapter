@@ -9,20 +9,17 @@ If MQTT doesn't work, make sure that
 2) mosquitto is running (cmd path/to/mosquitto mosquitto)
 3) you can listen to the incoming MQTT data on chrome's MQTT Lens."""
 
-import time
-import re
+
 import sys
 import os
-from datetime import datetime
 import json
 import logging
-import socket
 import pytz
+from datetime import datetime
 
 # confluent_kafka is based on librdkafka, details in requirements.txt
 from src.panta_rhei.client.panta_rhei_client import PantaRheiClient
 import paho.mqtt.client as mqtt
-
 
 
 __author__ = "Salzburg Research"
@@ -116,27 +113,24 @@ def on_message(client, userdata, msg):
             logger.info("Found new mqtt topic: {} and saved it to file".format(msg.topic))
             pr_client.send("logging", "Found new mqtt topic: {} and saved it to file".format(msg.topic))
 
-
-    messages = list()
     if msg.topic.startswith("testtopic"):
         message = dict()
         message["Datastream"] = msg.topic.replace("/", ".")
         message["result"] = float(msg.payload)
         message["phenomenonTime"] = datetime.utcnow().replace(tzinfo=pytz.UTC).isoformat()
         message["resultTime"] = datetime.utcnow().replace(tzinfo=pytz.UTC).isoformat()
-        messages.append(message)
 
     elif msg.topic.startswith("octoprint/temperature"):
         # messages = parse_octoprint_temperature(msg)
         pass
     elif msg.topic.startswith("prusa3d/temperature"):
-        messages = parse_prusa3d_temperature(msg)
+        send_prusa3d_temperature(msg)
     elif msg.topic.startswith("prusa3d/progress"):
-        messages = parse_prusa3d_progress(msg)
+        send_prusa3d_progress(msg)
     elif msg.topic.startswith("prusa3d/mqtt"):
-        messages = parse_prusa3d_mqtt(msg)
+        send_prusa3d_mqtt(msg)
     elif msg.topic.startswith("prusa3d/event"):
-        messages = parse_prusa3d_event(msg)
+        send_prusa3d_event(msg)
     elif msg.topic.startswith("sensorpi/"):
         send_sensorpi_message(msg)
     else:
@@ -154,281 +148,46 @@ def send_sensorpi_message(msg):
         "sensorpi/current3": "sigmatek_current"
     })
     logger.debug("Sending SensorPi Data to Panta Rhei")
-    pr_client.send(quantity=sensorpi_mapping[msg.topic], result=msg.payload.decode())
+    pr_client.send(quantity=sensorpi_mapping[msg.topic], result=msg.payload.decode("utf-8"))
 
 
-def parse_octoprint_temperature(msg):
-    # octoprint and prusa3d equal because there could be a bug in the plugin, ignore octoprint messages
+def send_prusa3d_temperature(msg):
     payload = json.loads(msg.payload.decode("utf-8"))
 
-    messages = list()
     for direction in ["target", "actual"]:
         if direction in payload.keys():
-            message = dict()
-            message["phenomenonTime"] = convert_timestamp(payload["_timestamp"])
-            message["resultTime"] = datetime.utcnow().replace(tzinfo=pytz.UTC).isoformat()
-            message["result"] = payload[direction]
-            if msg.topic == "octoprint/temperature/bed":
-                message["Datastream"] = "prusa3d.bed.temp.{}".format(direction)
-            elif msg.topic == "octoprint/temperature/tool0":
-                message["Datastream"] = "prusa3d.tool0.temp.{}".format(direction)
-            else:
-                logger.warning("Octoprint quantity not implemented.")
-            messages.append(message)
-        else:
-            logger.warning("Octoprint payload direction not implemented.")
-
-    return messages
-
-
-def parse_prusa3d_temperature(msg):
-    payload = json.loads(msg.payload.decode("utf-8"))
-
-    messages = list()
-    for direction in ["target", "actual"]:
-        if direction in payload.keys():
-            message = dict()
-            message["phenomenonTime"] = convert_timestamp(payload["_timestamp"])
-            message["resultTime"] = datetime.utcnow().replace(tzinfo=pytz.UTC).isoformat()
-            message["result"] = payload[direction]
             if msg.topic == "prusa3d/temperature/bed":
-                message["Datastream"] = "prusa3d.bed.temp.{}".format(direction)
+                quantity = "prusa3d.bed.temp.{}".format(direction)
             elif msg.topic == "prusa3d/temperature/tool0":
-                message["Datastream"] = "prusa3d.tool0.temp.{}".format(direction)
+                quantity = "prusa3d.tool0.temp.{}".format(direction)
             else:
                 logger.warning("Octoprint quantity not implemented.")
-            messages.append(message)
+                continue
+            pr_client.send(quantity=quantity, result=payload[direction], timestamp=payload["_timestamp"])
+
         else:
             logger.warning("Octoprint payload direction not implemented.")
 
-    return messages
 
-
-def parse_prusa3d_progress(msg):
-    message = dict()
+def send_prusa3d_progress(msg):
     payload = json.loads(msg.payload.decode("utf-8"))
-    message["phenomenonTime"] = convert_timestamp(payload["_timestamp"])
-    # del(payload["_timestamp"])
-    message["resultTime"] = datetime.utcnow().replace(tzinfo=pytz.UTC).isoformat()
-    message["result"] = None
-    message["parameters"] = payload
-    message["Datastream"] = "prusa3d.progress.status"
-    return [message]
+    pr_client.send(quantity="prusa3d.progress.status", result=msg.payload, timestamp=payload["_timestamp"])
 
 
-def parse_prusa3d_mqtt(msg):
-    message = dict()
+def send_prusa3d_mqtt(msg):
     payload = msg.payload.decode("utf-8")
-    try:
-        message["phenomenonTime"] = convert_timestamp(payload["_timestamp"])
-    except TypeError:
-        message["phenomenonTime"] = datetime.utcnow().replace(tzinfo=pytz.UTC).isoformat()
-    message["resultTime"] = datetime.utcnow().replace(tzinfo=pytz.UTC).isoformat()
-    message["result"] = None
-    message["parameters"] = payload
-    message["Datastream"] = "prusa3d.mqtt.status"
-    return [message]
+    pr_client.send(quantity="prusa3d.mqtt.status", result=msg.payload, timestamp=payload["_timestamp"])
 
 
-def parse_prusa3d_event(msg):
+def send_prusa3d_event(msg):
     # Skip ZChange information as they occur to frequently
     if msg.topic == "prusa3d/event/ZChange":
         return None
     payload = json.loads(msg.payload.decode("utf-8"))
     if payload.get("_event") in ["CaptureStart", "CaptureDone"]:
         return None
-    message = dict()
-    try:
-        message["phenomenonTime"] = convert_timestamp(payload["_timestamp"])
-        # del(payload["_timestamp"])
-    except KeyError:
-        message["phenomenonTime"] = datetime.utcnow().replace(tzinfo=pytz.UTC).isoformat()
-    message["resultTime"] = datetime.utcnow().replace(tzinfo=pytz.UTC).isoformat()
-    message["result"] = None
-    message["parameters"] = payload
-    message["Datastream"] = "prusa3d.event.status"
-    return [message]
 
-
-def mqtt_to_sensorthings(msg):
-    """
-    Parsing MQTT message from raw message object and transform into inte
-    :param msg: MQTT message including topic and payload
-    :return: datapoint dictionary including quantity (topic), timestamp and value
-    """
-
-    datapoint = dict()
-    datapoint["quantity"] = msg.topic
-    try:
-        payload = json.loads(msg.payload.decode("utf-8"))
-    except Exception as e:
-        logger.warning("Couldn't parse message: {}, {}".format(msg, e))
-        return
-
-    if type(payload) in [type(0), type(0.0)]:
-        datapoint["value"] = payload
-        datapoint["ts"] = datetime.utcnow().replace(tzinfo=pytz.UTC).isoformat()
-        datapoints = list([datapoint])
-    elif len(payload.keys()) != 2:
-        # In this case there are multiple keys in one payload,
-        # e.g. {'posE': 2233.81, 'posZ': 0.5, 'ts': 1516356558.740686, 'posX': 94.44, 'posY': 85.1}
-        datapoints = fetch_multiple_data(payload)
-        # return None
-    else:
-        try:
-            datapoint["ts"] = payload["ts"]
-            for key in list(payload.keys()):
-                if key != "ts":
-                    datapoint["value"] = payload[key]
-            datapoints = list([datapoint])
-        except:
-            logger.warning("Could not parse: {}".format(payload))
-            return None
-    return datapoints
-
-
-def fetch_multiple_data(payload):
-    """
-    Previously used for parsing kafka messages
-    :param payload: old kafka message
-    :return: datapoint dictionary
-    """
-    datapoints = list()
-    data_of_interest = ["posX", "posY", "posZ", "posE", "targetNozzle", "targetBed", "tempNozzle", "tempBed"]
-
-    ts_in = payload.get("ts", None)
-    if ts_in is None:  # return if no timestamp is found in payload
-        return None
-
-    for key, value in payload.items():
-        if key in data_of_interest:
-            datapoint = dict()
-            datapoint["value"] = value
-            datapoint["quantity"] = "rasp02/{}".format(key)
-            datapoint["ts"] = ts_in
-            datapoints.append(datapoint)
-    return datapoints
-
-
-# def convert_datastream_id(message):
-#     """
-#     Translate message metric: the MQTT input topic into the kafka bus quantity name via the
-#     metrics mapping json file.
-#     :param message: dictionary including quantity, timestamp and value
-#     :return: updated datapoint dictionary including timestamp, value and new quantity
-#     :rtype: dictionary. None if datapoint is ignored.
-#     """
-#
-#     if not isinstance(message["Datastream"], str):
-#         logger.error("Bad instance: {}".format(message))
-#         return None
-#     if message["Datastream"] in DATASTREAM_MAPPING.keys():
-#         iot_id = DATASTREAM_MAPPING[message["Datastream"]]["id"]
-#         try:
-#             uri = "http://{}/v1.0/Datastreams({})".format(SENSORTHINGS_HOST, iot_id)
-#         except Exception:
-#             kafka_logger(Exception, level="debug")
-#             uri = ""
-#         message["Datastream"] = {"@iot.id": iot_id,
-#                                  "name": message["Datastream"],
-#                                  "URI": uri}
-#         return message
-#     else:
-#         kafka_logger("Datastream not listed: {}".format(message["Datastream"]), level="warning")
-#         print(message)
-#         return None
-#
-#
-# def create_message(datapoint):
-#     """
-#     Convert any datapoint message into the canonical message format
-#     from i-maintenance's first iteration.
-#     :param datapoint: dictionary including quantity, timestamp and value
-#     :return: canonical message format as 4-key dictionary
-#     """
-#     message = {
-#         'phenomenonTime': datapoint["ts"],
-#         'resultTime': datetime.utcnow().replace(tzinfo=pytz.UTC).isoformat(),
-#         'result': datapoint["value"],
-#         'Datastream': {'@iot.id': datapoint["quantity"]}}
-#     return message
-#
-#
-# def convert_timestamp(ts_in, form="ISO8601"):
-#     """Parse any timestamp format into a specific one.
-#     Keyword arguments:
-#     :param ts_in: timestamp (string, int or float)
-#     :param form: timestamp format (string) default: "ISO8601"
-#     :return: a conventional timestamp of default type ISO8601 e.g. "2017-10-17T11:52:42.123456"
-#     """
-#     # Check if the input has already the correct format
-#     if form == "ISO8601" and type(ts_in) is str and ts_in.count(":") == 3:
-#         return ts_in
-#     # extract the unix timestamp to seconds
-#     if type(ts_in) in [int, float]:
-#         ts_len = len(str(int(ts_in)))
-#         if ts_len in [10, 9]:
-#             ts_in = float(ts_in)
-#         elif ts_len in [13, 12]:
-#             ts_in = float(ts_in) / 1000
-#         elif ts_len in [16, 15]:
-#             ts_in = float(ts_in) / 1000 / 1000
-#         else:
-#             kafka_logger("Unexpected timestamp format: {} ({})".format(ts_in, type(ts_in)), level="warning")
-#     if form == "ISO8601":
-#         return datetime.utcfromtimestamp(ts_in).replace(tzinfo=pytz.UTC).isoformat()
-#     elif form in ["UNIX", "Unix", "unix"]:
-#         return ts_in
-#     else:
-#         kafka_logger("Invalid date format specified: {}".format(form), level="warning")
-
-
-# # noinspection PyBroadException
-# def publish_message(message):
-#     """
-#     Publish the canonical data format (Version: i-maintenance first iteration)
-#     to the Kafka Bus.
-#
-#     Keyword argument:
-#     :param message: dictionary with 4 keywords and optional "parameters"
-#     :return: None
-#     """
-#     try:
-#         producer.produce(KAFKA_TOPIC_metric, json.dumps(message).encode('utf-8'),
-#                          key=str(message['Datastream']).encode('utf-8'))
-#         producer.poll(0)  # using poll(0), as Eden Hill mentions it avoids BufferError: Local: Queue full
-#         # producer.flush() poll should be faster here
-#         # print("sent:", str(message), str(message['Datastream']['@iot.id']).encode('utf-8'))
-#     except Exception as e:
-#         kafka_logger("Exception while sending log: {} \non kafka topic: {}\n Error: {}"
-#                      .format(message, KAFKA_TOPIC_metric, e), level="warning")
-#
-#
-# def kafka_logger(payload, level="debug"):
-#     """
-#     Publish the canonical data format (Version: i-maintenance first iteration)
-#     to the Kafka Bus.
-#
-#     Keyword argument:
-#     :param payload: message content as json or string
-#     :param level: log-level
-#     :return: None
-#     """
-#     message = {"Datastream": "dtz.src.logging",
-#                "phenomenonTime": datetime.utcnow().replace(tzinfo=pytz.UTC).isoformat(),
-#                "result": payload,
-#                "level": level,
-#                "host": socket.gethostname()}
-#
-#     print("Level: {} \tMessage: {}".format(level, payload))
-#     try:
-#         producer.produce(KAFKA_TOPIC_logging, json.dumps(message).encode('utf-8'),
-#                          key=str(message['Datastream']).encode('utf-8'))
-#         producer.poll(0)  # using poll(0), as Eden Hill mentions it avoids BufferError: Local: Queue full
-#         # producer.flush() poll should be faster here
-#     except Exception as e:
-#         print("Exception while sending metric: {} \non kafka topic: {}\n Error: {}"
-#               .format(message, KAFKA_TOPIC_logging, e))
+    pr_client.send(quantity="prusa3d.event.status", result=msg.payload, timestamp=payload["_timestamp"])
 
 
 if __name__ == '__main__':

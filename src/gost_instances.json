@@ -67,7 +67,7 @@
   "Datastreams": {
     "prusa3d.bed.temp.target": {
       "name": "Target Bed Temperature Prusa",
-      "description": "Datastream for the target temperature of the Prusa 3D printer's bed",
+      "description": "Datastream for the target temperature of the Prusa 3D printer bed",
       "observationType": "http://www.opengis.net/def/observationType/OGC-OM/2.0/OM_Measurement",
       "unitOfMeasurement": {
         "name": "Degree Celsius",
@@ -77,14 +77,14 @@
       "Thing": "prusa",
       "ObservedProperty": {
         "name": "Target Bed Temperature of the Prusa i3",
-        "description": "The desired temperature of the Prusa i3's printing bed",
+        "description": "The desired temperature of the Prusa i3 printing bed",
         "definition": "http://www.qudt.org/qudt/owl/1.0.0/quantity/Instances.html#AreaTemperature"
       },
       "Sensor": "prusa3d_temp_sensor"
     },
     "prusa3d.bed.temp.actual": {
       "name": "Actual Bed Temperature Prusa",
-      "description": "Datastream for the measured temperature of the Prusa 3D printer's bed",
+      "description": "Datastream for the measured temperature of the Prusa 3D printer bed",
       "observationType": "http://www.opengis.net/def/observationType/OGC-OM/2.0/OM_Measurement",
       "unitOfMeasurement": {
         "name": "Degree Celsius",
@@ -94,14 +94,14 @@
       "Thing": "prusa",
       "ObservedProperty": {
         "name": "Actual Bed Temperature of the Prusa i3",
-        "description": "The measured temperature of the Prusa i3's printing bed",
+        "description": "The measured temperature of the Prusa i3 printing bed",
         "definition": "http://www.qudt.org/qudt/owl/1.0.0/quantity/Instances.html#AreaTemperature"
       },
       "Sensor": "prusa3d_temp_sensor"
     },
     "prusa3d.tool0.temp.target": {
       "name": "Target Nozzle Temperature Prusa",
-      "description": "Datastream for the target temperature of the Prusa 3D printer's nozzle",
+      "description": "Datastream for the target temperature of the Prusa 3D printer nozzle",
       "observationType": "http://www.opengis.net/def/observationType/OGC-OM/2.0/OM_Measurement",
       "unitOfMeasurement": {
         "name": "Degree Celsius",
@@ -111,14 +111,14 @@
       "Thing": "prusa",
       "ObservedProperty": {
         "name": "Target Nozzle Temperature of the Prusa i3",
-        "description": "The desired temperature of the Prusa i3's nozzle",
+        "description": "The desired temperature of the Prusa i3 nozzle",
         "definition": "http://www.qudt.org/qudt/owl/1.0.0/quantity/Instances.html#AreaTemperature"
       },
       "Sensor": "prusa3d_temp_sensor"
     },
     "prusa3d.tool0.temp.actual": {
       "name": "Actual Nozzle Temperature Prusa",
-      "description": "Datastream for the measured temperature of the Prusa 3D printer's nozzle",
+      "description": "Datastream for the measured temperature of the Prusa 3D printer nozzle",
       "observationType": "http://www.opengis.net/def/observationType/OGC-OM/2.0/OM_Measurement",
       "unitOfMeasurement": {
         "name": "Degree Celsius",
@@ -128,7 +128,7 @@
       "Thing": "prusa",
       "ObservedProperty": {
         "name": "Actual Nozzle Temperature of the Prusa i3",
-        "description": "The measured temperature of the Prusa i3's nozzle",
+        "description": "The measured temperature of the Prusa i3 nozzle",
         "definition": "http://www.qudt.org/qudt/owl/1.0.0/quantity/Instances.html#AreaTemperature"
       },
       "Sensor": "prusa3d_temp_sensor"
