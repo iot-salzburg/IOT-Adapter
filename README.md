@@ -24,26 +24,58 @@ The MQTT Adapter is based on the components:
 
 ## Requirements
 
-1. Install [Docker](https://www.docker.com/community-edition#/download) version **1.10.0+**
-2. Install [Docker Compose](https://docs.docker.com/compose/install/) version **1.6.0+**
-3. Clone this repository
+1.  Install [Docker](https://www.docker.com/community-edition#/download) version **1.10.0+**
+2.  Install [Docker Compose](https://docs.docker.com/compose/install/) version **1.6.0+**
+3.  Make sure the [Panta Rhei](https://github.com/iot-salzburg/panta_rhei) stack is running.
+    This MQTT-Adaper requires Apache **Kafka**, as well as the GOST **SensorThings** server.
+3.  Clone this repository
+4.  Clone the panta rhei client into the `src`-directory:
+        
+        cd src/
+        git clone https://github.com/iot-salzburg/panta_rhei
+        cd panta_rhei/
+        git checkout client_0v1 
 
+    Now, the client can be imported in in `mqtt-adapter.py` with:
+    
+    ```python
+    from src.panta_rhei.client.panta_rhei_client import PantaRheiClient
+    ```
+    To use the client in deployed mode, configure `src/panta_rhei/client/config.json` to:
+    
+    ```json
+    {
+      "_comment": "Kafka Config",
+      "BOOTSTRAP_SERVERS": "192.168.48.81:9092,192.168.48.82:9092,192.168.48.83:9092",
+    
+      "_comment": "SensorThings Config: check in setup/gost/docker-compose.yml for the settings",
+      "GOST_SERVER": "192.168.48.81:8082",
+    
+      "_comment": "SensorThings Type Mapping: These types must fit with the kafka topic in config.json of the client.",
+      "http://www.opengis.net/def/observationType/OGC-OM/2.0/OM_TruthObservation": "pr.dtz.metric",
+      "http://www.opengis.net/def/observationType/OGC-OM/2.0/OM_CountObservation": "pr.dtz.metric",
+      "http://www.opengis.net/def/observationType/OGC-OM/2.0/OM_Measurement": "pr.dtz.metric",
+      "http://www.opengis.net/def/observationType/OGC-OM/2.0/OM_CategoryObservation": "pr.dtz.string",
+      "http://www.opengis.net/def/observationType/OGC-OM/2.0/OM_Observation": "pr.dtz.object",
+      "panta-rhei/Logging": "pr.dtz.logging"
+    }
+    ```
 
 ## Deployment
 
 The MQTT-Adapter uses the optionally Sensorthings to semantically describe
-the forwarded data. The later consumage of the sensor data with the
-suggested [DB-Adapter](https://github.com/i-maintenance/DB-Adapter/)
-works best with a running and feeded [SensorThings](https://github.com/iot-salzburg)
- Client.
+the forwarded data. The later consumption of the sensor data with the
+suggested [DB-Adapter](https://github.com/iot-salzburg/DB-Adapter/)
+works best with a running and feeded [SensorThings](https://github.com/iot-salzburg/panta_rhei/setup/gost)
+Server.
 
 
 
 ### Testing
-Using `docker-compose`:
+Using `docker-compose`: This depends on the **Panta Rhei Stack** and
+configured `instance_file`.
 
 ```bash
-git clone https://github.com/iot-salzburg/dtz_mqtt-adapter.git
 cd dtz_mqtt-adapter
 sudo docker-compose up --build -d
 ```
@@ -56,7 +88,7 @@ sudo docker-compose logs -f
 ```
 
 
-### Deployment in a docker swarm
+### Deployment in the docker swarm
 Using `docker stack`:
 
 If not already done, add a regitry instance to register the image

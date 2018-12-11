@@ -33,6 +33,10 @@
         "rasp02/mem",
         "rasp02/net-wlan0",
         "rasp05/airquality",
+        "sensorpi/current0",
+        "sensorpi/current1",
+        "sensorpi/humidity",
+        "sensorpi/temperature",
         "testtopic/testval",
         "testtopic2/testval2"
     ]

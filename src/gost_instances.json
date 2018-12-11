@@ -1,0 +1,159 @@
+{
+  "Things": {
+    "prusa": {
+      "name": "Prusa i3",
+      "description": "3D Printer Prusa i3 MK3 in the Iot Lab Salzburg on the central desk",
+      "properties": {
+        "kafka": {
+          "hosts": [
+            "il081:9093",
+            "il082:9094",
+            "il083:9095"
+          ],
+          "topics": {
+            "logs": "dtz-logging",
+            "metrics": "dtz-sensorthings"
+          }
+        },
+        "specification": "https://www.prusa3d.com/downloads/manual/prusa3d_manual_175_en.pdf"
+      }
+    },
+    "panda": {
+      "name": "Panda",
+      "description": "Franka Emika Panda robot in the Iot Lab Salzburg on the central desk",
+      "properties": {
+        "specification": "https://s3-eu-central-1.amazonaws.com/franka-de-uploads-staging/uploads/2018/05/2018-05-datasheet-panda.pdf"
+      }
+    },
+    "pixtend": {
+      "name": "PiXtend",
+      "description": "PiXtend PLC including the conveyor belt in the Iot Lab Salzburg on the central desk",
+      "properties": {
+        "specification": "https://ecksteinimg.de/Datasheet/Dobot/Conveyor-Belt-Instruction.pdf"
+      }
+    },
+    "sigmatek": {
+      "name": "Sigmatek",
+      "description": "Sigmatek PLC as well as miscellaneous non-acting systems",
+      "properties": {}
+    }
+  },
+  "Sensors": {
+    "SCT-013": {
+      "name": "Split Core Current Transformer",
+      "description": "Split Core Current Transformer SCT-013 with up to 5A/1V, 3.5 mm cable",
+      "encodingType": "application/pdf",
+      "metadata": "https://datasheetspdf.com/pdf-down/S/C/T/SCT-013-005-ETC.pdf"
+    },
+    "dht11": {
+      "name": "DHT11",
+      "description": "DHT11 temperature and humidity sensor",
+      "encodingType": "application/pdf",
+      "metadata": "https://cdn-learn.adafruit.com/downloads/pdf/dht.pdf"
+    }
+  },
+  "Datastreams": {
+    "temperature": {
+      "name": "IoT Labor Temperature",
+      "description": "Temperature of the IoT Labor of Salzburg Research",
+      "observationType": "http://www.opengis.net/def/observationType/OGC-OM/2.0/OM_Measurement",
+      "unitOfMeasurement": {
+        "name": "Degree Celsius",
+        "symbol": "degC",
+        "definition": "http://www.qudt.org/qudt/owl/1.0.0/unit/Instances.html#DegreeCelsius"
+      },
+      "ObservedProperty": {
+        "name": "IoT Labor Temperature",
+        "description": "Temperature of the IoT Labor, measured under the desk",
+        "definition": "http://www.qudt.org/qudt/owl/1.0.0/quantity/Instances.html#AreaTemperature"
+      },
+      "Thing": "sigmatek",
+      "Sensor": "dht11"
+    },
+    "humidity": {
+      "name": "IoT Labor Humidity",
+      "description": "Relative Humidity of the IoT Labor of Salzburg Research",
+      "observationType": "http://www.opengis.net/def/observationType/OGC-OM/2.0/OM_Measurement",
+      "unitOfMeasurement": {
+        "name": "Percent",
+        "symbol": "%",
+        "definition": ""
+      },
+      "ObservedProperty": {
+        "name": "IoT Labor Humidity",
+        "description": "Relative Humidity of the IoT Labor, measured under the desk",
+        "definition": "https://www.sciencedirect.com/topics/earth-and-planetary-sciences/relative-humidity"
+      },
+      "Thing": "sigmatek",
+      "Sensor": "dht11"
+    },
+    "panda_current": {
+      "name": "Current of the Panda Robot",
+      "description": "Used current of the Panda Roboting System in the IoT Labor of Salzburg Research",
+      "observationType": "http://www.opengis.net/def/observationType/OGC-OM/2.0/OM_Measurement",
+      "unitOfMeasurement": {
+        "name": "Ampere",
+        "symbol": "A",
+        "definition": "http://www.qudt.org/qudt/owl/1.0.0/unit/Instances.html#Ampere"
+      },
+      "ObservedProperty": {
+        "name": "Current of the Panda Robot",
+        "description": "Current of the Panda Roboting System including the ROS PC and UPS, measured in the electrical distributor.",
+        "definition": "http://www.qudt.org/qudt/owl/1.0.0/quantity/index.html#ElectricCurrent"
+      },
+      "Thing": "panda",
+      "Sensor": "SCT-013"
+    },
+    "prusa_current": {
+      "name": "Current of the Prusa 3D printer",
+      "description": "Used current of the Prusa 3D printing System in the IoT Labor of Salzburg Research",
+      "observationType": "http://www.opengis.net/def/observationType/OGC-OM/2.0/OM_Measurement",
+      "unitOfMeasurement": {
+        "name": "Ampere",
+        "symbol": "A",
+        "definition": "http://www.qudt.org/qudt/owl/1.0.0/unit/Instances.html#Ampere"
+      },
+      "ObservedProperty": {
+        "name": "Current of the Prusa 3D printer",
+        "description": "Current of the Prusa 3D printing System including the printer and the octoprint server, measured in the electrical distributor.",
+        "definition": "http://www.qudt.org/qudt/owl/1.0.0/quantity/index.html#ElectricCurrent"
+      },
+      "Thing": "prusa",
+      "Sensor": "SCT-013"
+    },
+    "pixtend_current": {
+      "name": "Current of the PiXtend",
+      "description": "Used current of the PiXtend System in the IoT Labor of Salzburg Research",
+      "observationType": "http://www.opengis.net/def/observationType/OGC-OM/2.0/OM_Measurement",
+      "unitOfMeasurement": {
+        "name": "Ampere",
+        "symbol": "A",
+        "definition": "http://www.qudt.org/qudt/owl/1.0.0/unit/Instances.html#Ampere"
+      },
+      "ObservedProperty": {
+        "name": "Current of the PiXtend",
+        "description": "Current of the PiXtend System including the conveyor belt, measured in the electrical distributor.",
+        "definition": "http://www.qudt.org/qudt/owl/1.0.0/quantity/index.html#ElectricCurrent"
+      },
+      "Thing": "pixtend",
+      "Sensor": "SCT-013"
+    },
+    "sigmatek_current": {
+      "name": "Current of the Sigmatek PLC",
+      "description": "Used current of the Sigmatek PLC in the IoT Labor of Salzburg Research",
+      "observationType": "http://www.opengis.net/def/observationType/OGC-OM/2.0/OM_Measurement",
+      "unitOfMeasurement": {
+        "name": "Ampere",
+        "symbol": "A",
+        "definition": "http://www.qudt.org/qudt/owl/1.0.0/unit/Instances.html#Ampere"
+      },
+      "ObservedProperty": {
+        "name": "Current of the Sigmatek PLC",
+        "description": "Current of the Sigmatek PLC including some Raspberry Pis, measured in the electrical distributor.",
+        "definition": "http://www.qudt.org/qudt/owl/1.0.0/quantity/index.html#ElectricCurrent"
+      },
+      "Thing": "sigmatek",
+      "Sensor": "SCT-013"
+    }
+  }
+}
