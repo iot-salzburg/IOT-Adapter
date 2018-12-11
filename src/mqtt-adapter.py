@@ -153,8 +153,8 @@ def send_sensorpi_message(msg):
         "sensorpi/current2": "pixtend_current",
         "sensorpi/current3": "sigmatek_current"
     })
+    logger.debug("Sending SensorPi Data to Panta Rhei")
     pr_client.send(quantity=sensorpi_mapping[msg.topic], result=msg.payload.decode())
-    logger.debug("Sent SensorPi Data to Panta Rhei")
 
 
 def parse_octoprint_temperature(msg):
