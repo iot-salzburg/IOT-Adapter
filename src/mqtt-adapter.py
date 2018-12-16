@@ -18,6 +18,7 @@ import pytz
 from datetime import datetime
 
 # confluent_kafka is based on librdkafka, details in requirements.txt
+sys.path.append(os.sep.join(os.getcwd().split(os.sep)[:-1]))
 from src.panta_rhei.client.panta_rhei_client import PantaRheiClient
 import paho.mqtt.client as mqtt
 
