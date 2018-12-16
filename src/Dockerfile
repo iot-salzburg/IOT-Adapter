@@ -23,9 +23,11 @@ RUN pip install confluent-kafka==${CONFLUENT_KAFKA_VERSION}
 ADD requirements.txt .
 RUN pip install -r requirements.txt
 
-ADD . .
+RUN mkdir /src
+ADD . /src
 
 # setup proper configuration
-ENV PYTHONPATH .
+ENV PYTHONPATH /
+WORKDIR /src
 
-ENTRYPOINT ["python", "mqtt-adapter.py"]
+ENTRYPOINT ["python", "/src/mqtt-adapter.py"]
