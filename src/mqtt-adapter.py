@@ -19,13 +19,15 @@ from datetime import datetime
 
 # confluent_kafka is based on librdkafka, details in requirements.txt
 sys.path.append(os.sep.join(os.getcwd().split(os.sep)[:-1]))
-from src.panta_rhei.client.panta_rhei_client import PantaRheiClient
+sys.path.append("/src/panta_rhei/")
+from client.digital_twin_client import DigitalTwinClient
+#from src.panta_rhei.client.panta_rhei_client import PantaRheiClient
 import paho.mqtt.client as mqtt
 
 
 __author__ = "Salzburg Research"
-__version__ = "2.0"
-__date__ = "11 Dezember 2018"
+__version__ = "2.1"
+__date__ = "7 January 2019"
 __email__ = "christoph.schranz@salzburgresearch.at"
 __status__ = "Development"
 
@@ -203,7 +205,11 @@ if __name__ == '__main__':
     with open(topics_list_file) as topics_file:
         MQTT_TOPICS = json.load(topics_file)["topics"]
 
-    pr_client = PantaRheiClient("MQTT-Adapter")
+    #pr_client = PantaRheiClient("MQTT-Adapter")
+    config = {"client_name": "MQTT-Adapter", "system_name": "dtz",
+          "kafka_bootstrap_servers": "192.168.48.81:9092,192.168.48.82:9092,192.168.48.83:9092", 
+          "gost_servers": "192.168.48.81:8082"}
+    pr_client = DigitalTwinClient(**config)
     pr_client.register(instance_file="gost_instances.json")
 
     logger.info("Configured the Panta Rhei Client")

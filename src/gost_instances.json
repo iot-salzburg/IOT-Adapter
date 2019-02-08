@@ -162,7 +162,7 @@
       "Thing": "prusa",
       "ObservedProperty": {
         "name": "network information",
-        "description": "mqtt network connection of the printer's controller",
+        "description": "mqtt network connection of the printer''s controller",
         "definition": "srfg.prusa3d.mqtt"
       },
       "Sensor": "prusa3d_controller"
