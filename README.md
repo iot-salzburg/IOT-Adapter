@@ -9,9 +9,10 @@ Therefore both services must be running:
 
 
 The MQTT Adapter is based on the components:
-* Paho-MQTT Messaging Client, [paho.mqtt](https://pypi.python.org/pypi/paho-mqtt/1.3.1) version **1.3.1**
-* Kafka Client [librdkafka](https://github.com/geeknam/docker-confluent-python) version **0.11.1**
-* Python Kafka module [confluent-kafka-python](https://github.com/confluentinc/confluent-kafka-python) version **0.9.1.2**
+* Paho-MQTT Messaging Client, [paho.mqtt](https://pypi.python.org/pypi/paho-mqtt/1.3.1) version **1.4.0**
+* Kafka Client [librdkafka](https://github.com/geeknam/docker-confluent-python) version **2.1**
+* Python Kafka module [confluent-kafka-python](https://github.com/confluentinc/confluent-kafka-python) 
+version **0.11.6**
 
 
 ## Contents
@@ -29,36 +30,24 @@ The MQTT Adapter is based on the components:
 3.  Make sure the [Panta Rhei](https://github.com/iot-salzburg/panta_rhei) stack is running.
     This MQTT-Adaper requires Apache **Kafka**, as well as the GOST **SensorThings** server.
 3.  Clone this repository
-4.  Clone the panta rhei client into the `src`-directory:
+4.  Clone the panta rhei client into the `src` directory:
         
         cd src/
-        git clone https://github.com/iot-salzburg/panta_rhei
-        cd panta_rhei/
-        git checkout client_0v1 
+        git clone https://git-service.ait.ac.at/im-IoT4CPS/WP5-lifecycle-mgmt panta_rhei
 
-    Now, the client can be imported in in `mqtt-adapter.py` with:
+    Now, the client can be imported and used in `mqtt-adapter.py` with:
     
     ```python
-    from src.panta_rhei.client.panta_rhei_client import PantaRheiClient
-    ```
-    To use the client in deployed mode, configure `src/panta_rhei/client/config.json` to:
-    
-    ```json
-    {
-      "_comment": "Kafka Config",
-      "BOOTSTRAP_SERVERS": "192.168.48.81:9092,192.168.48.82:9092,192.168.48.83:9092",
-    
-      "_comment": "SensorThings Config: check in setup/gost/docker-compose.yml for the settings",
-      "GOST_SERVER": "192.168.48.81:8082",
-    
-      "_comment": "SensorThings Type Mapping: These types must fit with the kafka topic in config.json of the client.",
-      "http://www.opengis.net/def/observationType/OGC-OM/2.0/OM_TruthObservation": "pr.dtz.metric",
-      "http://www.opengis.net/def/observationType/OGC-OM/2.0/OM_CountObservation": "pr.dtz.metric",
-      "http://www.opengis.net/def/observationType/OGC-OM/2.0/OM_Measurement": "pr.dtz.metric",
-      "http://www.opengis.net/def/observationType/OGC-OM/2.0/OM_CategoryObservation": "pr.dtz.string",
-      "http://www.opengis.net/def/observationType/OGC-OM/2.0/OM_Observation": "pr.dtz.object",
-      "panta-rhei/Logging": "pr.dtz.logging"
-    }
+    import os, sys
+    sys.path.append(os.sep.join(os.getcwd().split(os.sep)[:-1]) + "/src/panta_rhei/")
+    from src.panta_rhei.client.digital_twin_client import DigitalTwinClient
+
+    config = {"client_name": "MQTT-Adapter", "system_name": "dtz",
+            "kafka_bootstrap_servers": "192.168.48.81:9092,192.168.48.82:9092,192.168.48.83:9092",
+            "gost_servers": "192.168.48.81:8082"}
+        
+    pr_client = DigitalTwinClient(**config)
+    pr_client.register(instance_file="gost_instances.json")
     ```
 
 ## Deployment
@@ -148,7 +137,7 @@ or add the file `/etc/docker/daemon.json` with the content:
 where `your_dns` can be found with the command:
 
 ```bash
-nmcli device show <interfacename> | grep IP4.DNS
+nmcli device show [interfacename] | grep IP4.DNS
 ```
 
 ####  Traceback of non zero code 4 or 128:

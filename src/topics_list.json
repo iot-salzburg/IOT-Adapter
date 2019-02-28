@@ -35,6 +35,8 @@
         "rasp05/airquality",
         "sensorpi/current0",
         "sensorpi/current1",
+        "sensorpi/current2",
+        "sensorpi/current3",
         "sensorpi/humidity",
         "sensorpi/temperature",
         "testtopic/testval",
