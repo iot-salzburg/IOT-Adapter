@@ -109,3 +109,5 @@ src/panta_rhei/
 src/gost_instances.json.save*
 setup_broker/mosquitto.conf.save*
 setup_broker/docker-compose.yml.save*
+__pycache__/
+
