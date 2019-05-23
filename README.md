@@ -15,10 +15,13 @@ The MQTT Adapter is based on the components:
 version **0.11.6**
 
 
+
 ## Contents
 
 1. [Requirements](#requirements)
-2. [Deployment](#deployment)
+2. [Basic Configuration](#basic-configuration)
+2. [Quickstart](#quickstart)
+3. [Deployment](#deployment-in-the-docker-swarm)
 3. [Configuration](#configuration)
 4. [Trouble-Shooting](#trouble-shooting)
 
@@ -107,6 +110,7 @@ sudo docker-compose logs -f
 
 
 ## Deployment in the docker swarm
+
 Using `docker stack`:
 
 If not already done, add a registry instance to register the image
