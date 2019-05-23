@@ -30,25 +30,26 @@ version **0.11.6**
 3.  Make sure the [Panta Rhei](https://github.com/iot-salzburg/panta_rhei) stack is running.
     This MQTT-Adaper requires Apache **Kafka**, as well as the GOST **SensorThings** server.
 4.  Make sure the MQTT-broker runs. The `dockerfile` is in the repository under `setup-broker`.
-3.  Clone this repository
-4.  Clone the panta rhei client into the `src` directory:
+5.  Clone the Panta Rhei client into this repository:
         
-        cd src/
-        git clone https://github.com/iot-salzburg/panta_rhei panta_rhei
+        
+    git clone https://github.com/iot-salzburg/panta_rhei src/panta_rhei > /dev/null 2>&1 || git -C src/panta_rhei/ pull
 
-    Now, the client can be imported and used in `mqtt-adapter.py` with:
+Now, the client can be imported and used in `mqtt-adapter.py` with:
     
     ```python
     import os, sys
-    sys.path.append(os.sep.join(os.getcwd().split(os.sep)[:-1]) + "/src/panta_rhei/")
-    from src.panta_rhei.client.digital_twin_client import DigitalTwinClient
+    sys.path.append(os.getcwd())
+    from client.digital_twin_client import DigitalTwinClient
 
-    config = {"client_name": "MQTT-Adapter", "system_name": "dtz",
-            "kafka_bootstrap_servers": "192.168.48.81:9092,192.168.48.82:9092,192.168.48.83:9092",
-            "gost_servers": "192.168.48.81:8082"}
-        
-    pr_client = DigitalTwinClient(**config)
-    pr_client.register(instance_file="gost_instances.json")
+    # Set the configs, create a new Digital Twin Instance and register file structure
+    config = {"client_name": "mqtt-adapter",
+              "system": "eu.srfg.iot-iot4cps-wp5.CarFleet1",
+              "gost_servers": "localhost:8084",
+              "kafka_bootstrap_servers": "localhost:9092"}
+    client = DigitalTwinClient(**config)
+    client.register_existing(mappings_file=MAPPINGS)
+    # client.register_new(instance_file=INSTANCES)  # Registering of new instances should be outsourced to the platform
     ```
 
 ## Deployment
@@ -65,6 +66,20 @@ Server.
 ```bash
 cd dtz_mqtt-adapter/setup-broker
 sudo docker-compose up --build -d
+```
+
+### Creating the Kafka Topics if not already done
+
+If zookeeper is specified by `:2181`, the local zookeeper service will be used. 
+It may take some seconds until the new topics are distributed on each zookeeper instance in
+a cluster setup.
+
+```bash
+/kafka/bin/kafka-topics.sh --zookeeper :2181 --list
+/kafka/bin/kafka-topics.sh --zookeeper :2181 --create --partitions 3 --replication-factor 3 --config min.insync.replicas=2 --config cleanup.policy=compact --config retention.ms=241920000 --topic eu.srfg.iot.dtz.data
+/kafka/bin/kafka-topics.sh --zookeeper :2181 --create --partitions 3 --replication-factor 3 --config min.insync.replicas=2 --config cleanup.policy=compact --config retention.ms=241920000 --topic eu.srfg.iot.dtz.external
+/kafka/bin/kafka-topics.sh --zookeeper :2181 --create --partitions 3 --replication-factor 1 --config min.insync.replicas=1 --config cleanup.policy=compact --config retention.ms=241920000 --topic eu.srfg.iot.dtz.logging
+/kafka/bin/kafka-topics.sh --zookeeper :2181 --list
 ```
 
 ### Testing

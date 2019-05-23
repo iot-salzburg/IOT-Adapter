@@ -27,6 +27,7 @@
         "prusa3d/progress/printing",
         "prusa3d/progress/slicing",
         "prusa3d/temperature/bed",
+        "prusa3d/temperature/chamber",
         "prusa3d/temperature/tool0",
         "rasp02/cpu",
         "rasp02/cpu-temp",

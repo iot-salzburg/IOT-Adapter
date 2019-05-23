@@ -6,9 +6,11 @@
       "properties": {
         "kafka": {
           "hosts": [
-            "il081:9093",
-            "il082:9094",
-            "il083:9095"
+            "il071:9092",
+            "il072:9092",
+            "il073:9092",
+            "il074:9092",
+            "il075:9092"
           ],
           "topics": {
             "logs": "dtz-logging",
@@ -35,7 +37,16 @@
     "sigmatek": {
       "name": "Sigmatek",
       "description": "Sigmatek PLC as well as miscellaneous non-acting systems",
-      "properties": {}
+      "properties": {
+        "specification": "https://www.sigmatek-automation.com/"
+      }
+    },
+    "dtz-labor": {
+      "name": "DTZ Labor",
+      "description": "Labor room in Salzburg Research 2nd floor in which the dtz inventory is installed.",
+      "properties": {
+        "specification": "https://www.sigmatek-automation.com/"
+      }
     }
   },
   "Sensors": {
@@ -74,12 +85,12 @@
         "symbol": "degC",
         "definition": "http://www.qudt.org/qudt/owl/1.0.0/unit/Instances.html#DegreeCelsius"
       },
-      "Thing": "prusa",
       "ObservedProperty": {
         "name": "Target Bed Temperature of the Prusa i3",
         "description": "The desired temperature of the Prusa i3 printing bed",
         "definition": "http://www.qudt.org/qudt/owl/1.0.0/quantity/Instances.html#AreaTemperature"
       },
+      "Thing": "prusa",
       "Sensor": "prusa3d_temp_sensor"
     },
     "prusa3d.bed.temp.actual": {
@@ -91,12 +102,12 @@
         "symbol": "degC",
         "definition": "http://www.qudt.org/qudt/owl/1.0.0/unit/Instances.html#DegreeCelsius"
       },
-      "Thing": "prusa",
       "ObservedProperty": {
         "name": "Actual Bed Temperature of the Prusa i3",
         "description": "The measured temperature of the Prusa i3 printing bed",
         "definition": "http://www.qudt.org/qudt/owl/1.0.0/quantity/Instances.html#AreaTemperature"
       },
+      "Thing": "prusa",
       "Sensor": "prusa3d_temp_sensor"
     },
     "prusa3d.tool0.temp.target": {
@@ -108,12 +119,12 @@
         "symbol": "degC",
         "definition": "http://www.qudt.org/qudt/owl/1.0.0/unit/Instances.html#DegreeCelsius"
       },
-      "Thing": "prusa",
       "ObservedProperty": {
         "name": "Target Nozzle Temperature of the Prusa i3",
         "description": "The desired temperature of the Prusa i3 nozzle",
         "definition": "http://www.qudt.org/qudt/owl/1.0.0/quantity/Instances.html#AreaTemperature"
       },
+      "Thing": "prusa",
       "Sensor": "prusa3d_temp_sensor"
     },
     "prusa3d.tool0.temp.actual": {
@@ -125,12 +136,12 @@
         "symbol": "degC",
         "definition": "http://www.qudt.org/qudt/owl/1.0.0/unit/Instances.html#DegreeCelsius"
       },
-      "Thing": "prusa",
       "ObservedProperty": {
         "name": "Actual Nozzle Temperature of the Prusa i3",
         "description": "The measured temperature of the Prusa i3 nozzle",
         "definition": "http://www.qudt.org/qudt/owl/1.0.0/quantity/Instances.html#AreaTemperature"
       },
+      "Thing": "prusa",
       "Sensor": "prusa3d_temp_sensor"
     },
     "prusa3d.progress.status": {
@@ -142,12 +153,12 @@
         "symbol": "srfg.prusa3d.processing",
         "definition": "json-message"
       },
-      "Thing": "prusa",
       "ObservedProperty": {
         "name": "processing data",
         "description": "processes run to perform a print (printing, slicing)",
         "definition": "srfg.prusa3d.processing"
       },
+      "Thing": "prusa",
       "Sensor": "prusa3d_controller"
     },
     "prusa3d.mqtt.status": {
@@ -159,12 +170,12 @@
         "symbol": "srfg.prusa3d.mqtt",
         "definition": "connection-status"
       },
-      "Thing": "prusa",
       "ObservedProperty": {
         "name": "network information",
         "description": "mqtt network connection of the printer''s controller",
         "definition": "srfg.prusa3d.mqtt"
       },
+      "Thing": "prusa",
       "Sensor": "prusa3d_controller"
     },
     "prusa3d.event.status": {
@@ -176,12 +187,12 @@
         "symbol": "srfg.prusa3d.event",
         "definition": "json-message"
       },
-      "Thing": "prusa",
       "ObservedProperty": {
         "name": "event information",
         "description": "events occurring while printing",
         "definition": "srfg.prusa3d.event"
       },
+      "Thing": "prusa",
       "Sensor": "prusa3d_controller"
     },
     "temperature": {
@@ -198,7 +209,7 @@
         "description": "Temperature of the IoT Labor, measured under the desk",
         "definition": "http://www.qudt.org/qudt/owl/1.0.0/quantity/Instances.html#AreaTemperature"
       },
-      "Thing": "sigmatek",
+      "Thing": "dtz-labor",
       "Sensor": "dht11"
     },
     "humidity": {
@@ -215,7 +226,7 @@
         "description": "Relative Humidity of the IoT Labor, measured under the desk",
         "definition": "https://www.sciencedirect.com/topics/earth-and-planetary-sciences/relative-humidity"
       },
-      "Thing": "sigmatek",
+      "Thing": "dtz-labor",
       "Sensor": "dht11"
     },
     "panda_current": {
