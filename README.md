@@ -4,8 +4,8 @@ This component subscribes to topics from the Internet of Things
 protocol MQTT and forwards them to the messaging system which is based on
 Apache Kafka.
 Therefore both services must be running:
-* [MQTT-broker](https://github.com/iot-salzburg/mqtt-adapter)
-* [messaging-system](https://github.com/iot-salzburg/messaging-system)
+* [MQTT-broker](https://github.com/iot-salzburg/dtz_mqtt-adapter) in the same repository.
+* [panta-rhei stack](https://github.com/iot-salzburg/panta_rhei)
 
 
 The MQTT Adapter is based on the components:
@@ -29,11 +29,12 @@ version **0.11.6**
 2.  Install [Docker Compose](https://docs.docker.com/compose/install/) version **1.6.0+**
 3.  Make sure the [Panta Rhei](https://github.com/iot-salzburg/panta_rhei) stack is running.
     This MQTT-Adaper requires Apache **Kafka**, as well as the GOST **SensorThings** server.
+4.  Make sure the MQTT-broker runs. The `dockerfile` is in the repository under `setup-broker`.
 3.  Clone this repository
 4.  Clone the panta rhei client into the `src` directory:
         
         cd src/
-        git clone https://git-service.ait.ac.at/im-IoT4CPS/WP5-lifecycle-mgmt panta_rhei
+        git clone https://github.com/iot-salzburg/panta_rhei panta_rhei
 
     Now, the client can be imported and used in `mqtt-adapter.py` with:
     
@@ -59,6 +60,12 @@ works best with a running and feeded [SensorThings](https://github.com/iot-salzb
 Server.
 
 
+### Starting the MQTT broker
+
+```bash
+cd dtz_mqtt-adapter/setup-broker
+sudo docker-compose up --build -d
+```
 
 ### Testing
 Using `docker-compose`: This depends on the **Panta Rhei Stack** and
@@ -93,7 +100,11 @@ If running with docker-compose works, the stack will start by running:
 
 ```bash
 git clone https://github.com/iot-salzburg/dtz_mqtt-adapter.git
-cd dtz_mqtt-adapter
+cd dtz_mqtt-adapter/setup-broker
+chmod +x st* sh*
+./start_mqtt-broker.sh
+
+cd ../../dtz_mqtt-adapter
 chmod +x st* sh*
 ./start_mqtt-adapter.sh
 ```
