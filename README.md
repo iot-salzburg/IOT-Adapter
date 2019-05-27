@@ -33,7 +33,7 @@ version **0.11.6**
 3.  Make sure the [Panta Rhei](https://github.com/iot-salzburg/panta_rhei) stack is running.
     This MQTT-Adaper requires Apache **Kafka**, as well as the **SensorThings** server GOST.
 4.  Make sure the MQTT-broker runs. The `dockerfile` is in the repository under `setup-broker`
-    that can also be deployed in a Docker Swarm.
+    that can also be deployed in a Docker Swarm. Instruction is [here](#starting-the-mqtt-broker)
 5.  Clone the Panta Rhei client into the `src`-directory:
     
 ```bash
@@ -92,6 +92,24 @@ a cluster setup.
 ```
 
 ### Testing
+
+Configure the connection in the `docker-compose.yml`
+
+```yaml
+services:
+  adapter:
+    ...
+    environment:
+      # MQTT config
+      MQTT_BROKER: "192.168.48.71"
+      MQTT_SUBSCRIBED_TOPICS: "prusa3d/#,sensorpi/#,octoprint/#"
+      # Panta Rhei configuration
+      CLIENT_NAME: "mqtt-adapter"
+      SYSTEM_NAME: "at.srfg.iot.dtz"
+      SENSORTHINGS_HOST: "192.168.48.71:8082"
+      BOOTSTRAP_SERVERS: "192.168.48.71:9092,192.168.48.72:9092,192.168.48.73:9092,192.168.48.74:9092,192.168.48.75:9092"
+```
+
 Using `docker-compose`: This depends on the **Panta Rhei Stack** and
 configured `instance_file`.
 
@@ -106,7 +124,6 @@ Watch the logs with:
 ```bash
 sudo docker-compose logs -f
 ```
-
 
 
 ## Deployment in the docker swarm

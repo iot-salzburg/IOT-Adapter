@@ -33,15 +33,14 @@ __email__ = "christoph.schranz@salzburgresearch.at"
 __status__ = "Development"
 
 # MQTT_BROKER = "il050.salzburgresearch.at"
-MQTT_BROKER = "192.168.48.71"
-SUBSCRIBED_TOPICS = ["prusa3d/#", "sensorpi/#", "octoprint/#"]
-
+MQTT_BROKER = os.environ.get("MQTT_BROKER", "192.168.48.71")
+SUBSCRIBED_TOPICS = os.environ.get("MQTT_SUBSCRIBED_TOPICS", "prusa3d/#,sensorpi/#,octoprint/#").split(",")
 
 # Panta Rhei configuration
-CLIENT_NAME = "mqtt-adapter"
-SYSTEM_NAME = "at.srfg.iot.dtz"
-SENSORTHINGS_HOST = "192.168.48.71:8082"
-BOOTSTRAP_SERVERS = "192.168.48.71:9092,192.168.48.72:9092,192.168.48.73:9092,192.168.48.74:9092,192.168.48.75:9092"
+CLIENT_NAME = os.environ.get("CLIENT_NAME", "mqtt-adapter")
+SYSTEM_NAME = os.environ.get("SYSTEM_NAME", "test-topic")  # "at.srfg.iot.dtz"
+SENSORTHINGS_HOST = os.environ.get("SENSORTHINGS_HOST", "192.168.48.71:8082")
+BOOTSTRAP_SERVERS = os.environ.get("BOOTSTRAP_SERVERS", "192.168.48.71:9092,192.168.48.72:9092,192.168.48.73:9092,192.168.48.74:9092,192.168.48.75:9092")
 
 # # kafka parameters
 # # topics and servers should be of the form: "topic1,topic2,..."
