@@ -1,4 +1,7 @@
-# MQTT-Adapter
+# BluSensor-Adapter
+
+(This is a productive branch of the MQTT-Adapter.)
+
 Connecting MQTT services with the Messaging System.
 This component subscribes to topics from the Internet of Things
 messaging system MQTT and forwards them to the messaging system which is based on
