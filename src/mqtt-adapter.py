@@ -23,41 +23,36 @@ import paho.mqtt.client as mqtt
 # confluent_kafka is based on librdkafka, details in requirements.txt
 sys.path.append(os.sep.join(os.getcwd().split(os.sep)[:-1]))
 sys.path.append("/src/panta_rhei/")
-from panta_rhei.client.digital_twin_client import DigitalTwinClient
+from src.panta_rhei.client.digital_twin_client import DigitalTwinClient
 
 
 __author__ = "Salzburg Research"
 __version__ = "2.2"
-__date__ = "23 May 2019"
+__date__ = "23 September 2019"
 __email__ = "christoph.schranz@salzburgresearch.at"
 __status__ = "Development"
 
-# MQTT_BROKER = "il050.salzburgresearch.at"
-MQTT_BROKER = os.environ.get("MQTT_BROKER", "192.168.48.71")
-SUBSCRIBED_TOPICS = os.environ.get("MQTT_SUBSCRIBED_TOPICS", "prusa3d/#,sensorpi/#,octoprint/#").split(",")
+MQTT_BROKER = os.environ.get("MQTT_BROKER", "broker.blusensor.com")
+MQTT_PORT = os.environ.get("MQTT_PORT", 7883)  # client port
+# MQTT_PORT = os.environ.get("MQTT_PORT", 8883)  # client port with TLS
+# GATEWAY_ID = "660D999D84FB5F40"
+# temp_sensor = "246F28432CB6"
+# air_sensor = "246F28432BB6"
+def_topics = ",".join(["iot/blusensor/v1/gateway/246F28432BB6/thing/24:6F:28:43:2B:B6/data",
+                       "iot/blusensor/v1/gateway/246F28432BB6/thing/24:6F:28:43:2C:B6/data"])
+SUBSCRIBED_TOPICS = os.environ.get("MQTT_SUBSCRIBED_TOPICS", def_topics).split(",")
 
 # Panta Rhei configuration
-CLIENT_NAME = os.environ.get("CLIENT_NAME", "mqtt-adapter")
-SYSTEM_NAME = os.environ.get("SYSTEM_NAME", "test-topic")  # "at.srfg.iot.dtz"
+CLIENT_NAME = os.environ.get("CLIENT_NAME", "bluSensor-adapter")
+SYSTEM_NAME = os.environ.get("SYSTEM_NAME", "test-topic")  # "at.srfg.iot.dtz"  # set in docker-compose.yml
 SENSORTHINGS_HOST = os.environ.get("SENSORTHINGS_HOST", "192.168.48.71:8082")
 BOOTSTRAP_SERVERS = os.environ.get("BOOTSTRAP_SERVERS", "192.168.48.71:9092,192.168.48.72:9092,192.168.48.73:9092,192.168.48.74:9092,192.168.48.75:9092")
 
-# # kafka parameters
-# # topics and servers should be of the form: "topic1,topic2,..."
-# KAFKA_TOPIC_metric = "dtz.sensorthings"
-# KAFKA_TOPIC_logging = "dtz.logging"
-# BOOTSTRAP_SERVERS = '192.168.48.81:9092,192.168.48.82:9092,192.168.48.83:9092'  # ,192.168.48.83:9095'
-# KAFKA_GROUP_ID = "mqtt-adapter"
-#
-# # The mapping between incoming and outgoing metrics is defined by
-# # The mapping between incoming and outgoing metrics is defined by
-# # the json file located on:
-# dir_path = os.path.dirname(os.path.realpath(__file__))
-# datastream_file = os.path.join(dir_path, "datastreams.json")
-#
-# with open(datastream_file) as ds_file:
-#     DATASTREAM_MAPPING = json.load(ds_file)
-# Unit here ******************************************************
+logger = logging.getLogger("bluSensor-Adapter")
+logger.setLevel(logging.DEBUG)
+logging.basicConfig()
+
+logger.debug("Will connect to {} on port {}.".format(MQTT_BROKER, MQTT_PORT))
 
 
 def define_mqtt_statemachine():
@@ -71,10 +66,10 @@ def define_mqtt_statemachine():
     client.on_disconnect = on_disconnect
     client.on_message = on_message
 
-    client.connect(MQTT_BROKER, 1883, 60)
-    logger.info("Connection to {} on port {} established at {} UTC".format(MQTT_BROKER, 1883,
+    client.connect(MQTT_BROKER, int(MQTT_PORT), 60)
+    logger.info("Connection to {} on port {} established at {} UTC".format(MQTT_BROKER, MQTT_PORT,
                                                                            datetime.utcnow().isoformat()))
-    pr_client.produce("logging", "Connection to {} on port {} established".format(MQTT_BROKER, 1883))
+    pr_client.produce("logging", "Connection to {} on port {} established".format(MQTT_BROKER, MQTT_PORT))
 
     client.loop_forever()
 
@@ -109,111 +104,109 @@ def on_message(client, userdata, msg):
     :param msg: Incoming raw MQTT message
     :return:
     """
-    print("Received new data with topic: {} and values: {}".format(msg.topic, msg.payload))
 
-    # kafka_logger("New MQTT message: {}, {}".format(msg.topic, "-"), level="debug")  # msg.payload))
+    logger.debug("Received new data with topic: {}".format(msg.topic))
+    data = json.loads(msg.payload.decode("utf-8"))
+    # payload: print(json.dumps(data, indent=2))
+    # {
+    #     "mac": "24:6F:28:43:2C:B6",
+    #     "gwid": "246F28432CB6",
+    #     "ts_unix": 1569314556,
+    #     "ts_iso": "2019-09-24 10:42:36",
+    #     "name": "bluSensor AIQ",
+    #     "type": 10,
+    #     "lat": "0.000000",
+    #     "lon": "0.000000",
+    #     "hum": 26.8,
+    #     "tem": 35.3,
+    #     "dew": 13.4,
+    #     "co2": 400,
+    #     "tvoc": 102
+    # }
+    # {
+    #     "mac": "24:6F:28:43:2B:B6",
+    #     "gwid": "246F28432BB6",
+    #     "ts_unix": 1569314549,
+    #     "ts_iso": "2019-09-24 10:42:29",
+    #     "name": "bluSensor APM",
+    #     "type": 15,
+    #     "lat": "0.000000",
+    #     "lon": "0.000000",
+    #     "pm1": 1.7,
+    #     "pm2": 1.8,
+    #     "pm4": 1.8,
+    #     "pm10": 1.8
+    # }
+
+    logger.debug(json.dumps(data, indent=2))
     if msg.topic not in MQTT_TOPICS:
         MQTT_TOPICS.append(msg.topic)
         with open(topics_list_file, "w") as topics:
             json.dump({"topics": sorted(MQTT_TOPICS)}, topics, indent=4, sort_keys=True)
             logger.info("Found new mqtt topic: {} and saved it to file".format(msg.topic))
-            pr_client.produce("logging", "Found new mqtt topic: {} and saved it to file".format(msg.topic))
 
-    if msg.topic.startswith("testtopic"):
-        message = dict()
-        message["Datastream"] = msg.topic.replace("/", ".")
-        message["result"] = float(msg.payload)
-        message["phenomenonTime"] = datetime.utcnow().replace(tzinfo=pytz.UTC).isoformat()
-        message["resultTime"] = datetime.utcnow().replace(tzinfo=pytz.UTC).isoformat()
-
-    elif msg.topic.startswith("octoprint/temperature"):
-        # messages = parse_octoprint_temperature(msg)
-        pass
-    elif msg.topic.startswith("prusa3d/temperature"):
-        send_prusa3d_temperature(msg)
-    elif msg.topic.startswith("prusa3d/progress"):
-        send_prusa3d_progress(msg)
-    elif msg.topic.startswith("prusa3d/mqtt"):
-        send_prusa3d_mqtt(msg)
-    elif msg.topic.startswith("prusa3d/event"):
-        send_prusa3d_event(msg)
-    elif msg.topic.startswith("sensorpi/"):
-        send_sensorpi_message(msg)
+    if data.get("mac") == "24:6F:28:43:2C:B6":
+        send_temp_sensor(data)
+    elif data.get("mac") == "24:6F:28:43:2B:B6":
+        send_particle_sensor(data)
     else:
-        logger.warning("Found unparsed message: {}: {}".format(msg.topic, msg.payload))
+        logger.warning("Unknown data-type: topic: {}\npayload: {}".format(msg.topic, msg.payload))
 
 
-def send_sensorpi_message(msg):
-    # That mapping must fit from mqtt topic name to gost_instances datastream name
-    sensorpi_mapping = dict({
-        "sensorpi/temperature": "temperature",
-        "sensorpi/humidity": "humidity",
-        "sensorpi/current0": "panda_current",
-        "sensorpi/current1": "prusa_current",
-        "sensorpi/current2": "pixtend_current",
-        "sensorpi/current3": "sigmatek_current"
-    })
-    logger.debug("Sending SensorPi Data to Panta Rhei")
-    # print("Quantity: {}, payload: {}".format(sensorpi_mapping[msg.topic], msg.payload.decode("utf-8")))
-    pr_client.produce(quantity=sensorpi_mapping[msg.topic], result=msg.payload.decode("utf-8"))
-
-def send_prusa3d_temperature(msg):
-    payload = json.loads(msg.payload.decode("utf-8"))
-
-    for direction in ["target", "actual"]:
-        if direction in payload.keys():
-            if msg.topic == "prusa3d/temperature/bed":
-                quantity = "prusa3d.bed.temp.{}".format(direction)
-            elif msg.topic == "prusa3d/temperature/tool0":
-                quantity = "prusa3d.tool0.temp.{}".format(direction)
-            else:
-                logger.warning("Octoprint quantity not implemented.")
-                continue
-            # print("Quantity: {}, payload: {}".format(quantity, payload[direction]))
-            pr_client.produce(quantity=quantity, result=payload[direction], timestamp=payload["_timestamp"])
-        else:
-            logger.warning("Octoprint payload direction not implemented.")
+def send_temp_sensor(data):
+    message = get_basic_message(data)
+    sense_map = {"hum": "humidity",
+                 "tem": "temperature",
+                 "dew": "dew point",
+                 "co2": "CO2 concentration",
+                 "tvoc": "VOC concentration"}
+    logger.debug("  sending air data")
+    for quant, q_name in sense_map.items():
+        # message["Datastream"]["name"] = data["name"] + " " + q_name
+        # message["result"] = float(data.get(quant))
+        logger.info("Sending '{}' to Panta Rhei".format(data["name"] + " " + q_name))
+        pr_client.produce(quantity=quant, result=float(data.get(quant)), timestamp=message["phenomenonTime"])
 
 
-def send_prusa3d_progress(msg):
-    payload = json.loads(msg.payload.decode("utf-8"))
-    # print("Quantity: {}, payload: {}".format("prusa3d.progress.status", payload))
-    pr_client.produce(quantity="prusa3d.progress.status", result=msg.payload, timestamp=payload["_timestamp"])
+def send_particle_sensor(data):
+    message = get_basic_message(data)
+    sense_map = {"pm1": "particle-conc. 1µm",
+                 "pm2": "particle-conc. 2µm",
+                 "pm4": "particle-conc. 4µm",
+                 "pm10": "particle-conc. 10µm"}
+    logger.debug("  sending particle data")
+    for quant, q_name in sense_map.items():
+        # message["Datastream"]["name"] = data["name"] + " " + q_name
+        # message["result"] = float(data.get(quant))
+        logger.info("Sending '{}' to Panta Rhei".format(data["name"] + " " + q_name))
+        pr_client.produce(quantity=quant, result=float(data.get(quant)), timestamp=message["phenomenonTime"])
 
 
-def send_prusa3d_mqtt(msg):
-    payload = msg.payload.decode("utf-8")
-    # print("Quantity: {}, payload: {}".format("prusa3d.mqtt.status", payload))
-    pr_client.produce(quantity="prusa3d.mqtt.status", result=msg.payload, timestamp=payload["_timestamp"])
-
-
-def send_prusa3d_event(msg):
-    # Skip ZChange information as they occur to frequently
-    if msg.topic == "prusa3d/event/ZChange":
-        return None
-    payload = json.loads(msg.payload.decode("utf-8"))
-    if payload.get("_event") in ["CaptureStart", "CaptureDone"]:
-        return None
-
-    # print("Quantity: {}, payload: {}".format("prusa3d.event.status", payload))
-    pr_client.produce(quantity="prusa3d.event.status", result=msg.payload, timestamp=payload["_timestamp"])
+def get_basic_message(data):
+    message = dict()
+    message["Datastream"] = dict()
+    try:
+        message["phenomenonTime"] = datetime.utcfromtimestamp(data["ts_unix"]).replace(tzinfo=pytz.UTC).isoformat()
+    except:
+        logger.warning("couldn't parse datetime: {}".format(data["ts_unix"]))
+        message["phenomenonTime"] = datetime.utcnow().replace(tzinfo=pytz.UTC).isoformat()
+    message["resultTime"] = datetime.utcnow().replace(tzinfo=pytz.UTC).isoformat()
+    return message
 
 
 if __name__ == '__main__':
-    logger = logging.getLogger("MQTT-Adapter_Logger")
-    logger.setLevel(logging.INFO)
-
-    logging.basicConfig()
-    logger.info("Started MQTT Adapter")
+    logger.info("Started bluSensor Adapter")
 
     # Get dirname from inspect module
     filename = inspect.getframeinfo(inspect.currentframe()).filename
     dirname = os.path.dirname(os.path.abspath(filename))
     topics_list_file = os.path.join(dirname, "topics_list.json")
+
     INSTANCES = os.path.join(dirname, "instances.json")
     MAPPINGS = os.path.join(dirname, "ds-mappings.json")
+
     with open(topics_list_file) as topics_file:
-        MQTT_TOPICS = json.load(topics_file)["topics"]
+        MQTT_TOPICS = json.load(topics_file).get("topics", list())
 
     config = {"client_name": CLIENT_NAME,
               "system": SYSTEM_NAME,
@@ -222,7 +215,7 @@ if __name__ == '__main__':
 
     pr_client = DigitalTwinClient(**config)
     pr_client.register_new(instance_file=INSTANCES)
-    # pr_client.register_existing(mappings_file=MAPPINGS)
 
     logger.info("Configured the Panta Rhei Client")
+
     define_mqtt_statemachine()

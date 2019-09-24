@@ -19,16 +19,16 @@ from datetime import datetime
 
 import paho.mqtt.client as mqtt
 
-# MQTT_BROKER = "il050.salzburgresearch.at"
 MQTT_BROKER = "broker.blusensor.com"
 MQTT_PORT = 7883  # client port
-# MQTT_PORT = 7883  # client port with TLS
+# MQTT_PORT = 8883  # client port with TLS
 GATEWAY_ID = "660D999D84FB5F40"
 temp_sensor = "246F28432CB6"
 air_sensor = "246F28432BB6"
 def_topics = ",".join(["iot/blusensor/v1/gateway/246F28432BB6/thing/24:6F:28:43:2B:B6/data",
-                       "iot/blusensor/v1/gateway/246F28432BB6/thing/24:6F:28:43:2C:B6/data"])
+                       "iot/blusensor/v1/gateway/246F28432CB6/thing/24:6F:28:43:2C:B6/data"])
 SUBSCRIBED_TOPICS = os.environ.get("MQTT_SUBSCRIBED_TOPICS", def_topics).split(",")
+SUBSCRIBED_TOPICS = ["#"]
 
 logger = logging.getLogger("bluSensor-Adapter_Logger")
 logger.setLevel(logging.DEBUG)
@@ -61,6 +61,7 @@ def on_connect(client, userdata, flags, rc):
     # Subscribing in on_connect() means that if we lose the connection and
     # reconnect then subscriptions will be renewed.
     for mqtt_topic in SUBSCRIBED_TOPICS:
+        logger.debug("subscribe to topic '{}'".format(mqtt_topic))
         client.subscribe(mqtt_topic)
 
 
@@ -82,7 +83,6 @@ def on_message(client, userdata, msg):
     :return:
     """
 
-    data = json.loads(msg.payload.decode("utf-8"))
     # payload: print(json.dumps(data, indent=2))
     # {
     #     "mac": "24:6F:28:43:2C:B6",
@@ -113,24 +113,28 @@ def on_message(client, userdata, msg):
     #     "pm4": 1.8,
     #     "pm10": 1.8
     # }
-    logger.info("Received new data with topic: {}".format(msg.topic))
+    try:
+        logger.info("Received new data with topic: {}".format(msg.topic))
+        data = json.loads(msg.payload.decode("utf-8"))
+        logger.debug(json.dumps(data, indent=2))
 
-    if msg.topic not in MQTT_TOPICS:
-        MQTT_TOPICS.append(msg.topic)
-        with open(topics_list_file, "w") as topics:
-            json.dump({"topics": sorted(MQTT_TOPICS)}, topics, indent=4, sort_keys=True)
-            logger.info("Found new mqtt topic: {} and saved it to file".format(msg.topic))
+        if msg.topic not in MQTT_TOPICS:
+            MQTT_TOPICS.append(msg.topic)
+            with open(topics_list_file, "w") as topics:
+                json.dump({"topics": sorted(MQTT_TOPICS)}, topics, indent=4, sort_keys=True)
+                logger.info("Found new mqtt topic: {} and saved it to file".format(msg.topic))
 
-    if data.get("mac") == "24:6F:28:43:2C:B6":
-        send_temp_sensor(data)
-    elif data.get("mac") == "24:6F:28:43:2B:B6":
-        send_particle_sensor(data)
-    else:
-        logger.warning("Unknown data-type: topic: {}\npayload: {}".format(msg.topic, msg.payload))
+        if data.get("mac") == "24:6F:28:43:2C:B6":
+            send_temp_sensor(data)
+        elif data.get("mac") == "24:6F:28:43:2B:B6":
+            send_particle_sensor(data)
+        else:
+            logger.warning("Unknown data-type: topic: {}\npayload: {}".format(msg.topic, msg.payload))
+    except Exception as e:
+        logger.warning("Unexpected exception occured: {}".format(e))
 
 
 def send_temp_sensor(data):
-    print("send_temp_sensor(message, data)")
     message = get_basic_message(data)
     sense_map = {"hum": "humidity",
                  "tem": "temperature",
@@ -141,21 +145,22 @@ def send_temp_sensor(data):
     for quant, q_name in sense_map.items():
         message["Datastream"]["name"] = data["name"] + " " + q_name
         message["result"] = float(data.get(quant))
-        logger.info(json.dumps(message, indent=2))
+        logger.info("{} = {}".format(message["Datastream"]["name"], message["result"]))
+        # logger.info(json.dumps(message, indent=2))
 
 
 def send_particle_sensor(data):
-    print("send_particle_sensor(message, data)")
     message = get_basic_message(data)
     sense_map = {"pm1": "particle-conc. 1µm",
                  "pm2": "particle-conc. 2µm",
-                 "pm4": "particle-conc. 14µm",
+                 "pm4": "particle-conc. 4µm",
                  "pm10": "particle-conc. 10µm"}
     logger.debug("  sending particle data")
     for quant, q_name in sense_map.items():
         message["Datastream"]["name"] = data["name"] + " " + q_name
         message["result"] = float(data.get(quant))
-        logger.info(json.dumps(message, indent=2))
+        logger.info("{} = {}".format(message["Datastream"]["name"], message["result"]))
+        # logger.info(json.dumps(message, indent=2))
 
 
 def get_basic_message(data):
@@ -164,7 +169,7 @@ def get_basic_message(data):
     try:
         message["phenomenonTime"] = datetime.utcfromtimestamp(data["ts_unix"]).replace(tzinfo=pytz.UTC).isoformat()
     except:
-        logger.warning("couldn't parse datetime.")
+        logger.warning("couldn't parse datetime: {}".format(data["ts_unix"]))
         message["phenomenonTime"] = datetime.utcnow().replace(tzinfo=pytz.UTC).isoformat()
     message["resultTime"] = datetime.utcnow().replace(tzinfo=pytz.UTC).isoformat()
     return message
@@ -180,6 +185,4 @@ if __name__ == '__main__':
     with open(topics_list_file) as topics_file:
         MQTT_TOPICS = json.load(topics_file).get("topics", list())
 
-    # form = "iot/blusensor/v1/gateway/{}/thing/{}/data".format(GATEWAY_ID, air_sensor)
-    # logger.debug(form)
     define_mqtt_statemachine()

@@ -1,301 +1,180 @@
 {
   "Things": {
-    "prusa": {
-      "name": "Prusa i3",
-      "description": "3D Printer Prusa i3 MK3 in the Iot Lab Salzburg on the central desk",
-      "properties": {
-        "kafka": {
-          "hosts": [
-            "il071:9092",
-            "il072:9092",
-            "il073:9092",
-            "il074:9092",
-            "il075:9092"
-          ],
-          "topics": {
-            "logs": "dtz-logging",
-            "metrics": "dtz-sensorthings"
-          }
-        },
-        "specification": "https://www.prusa3d.com/downloads/manual/prusa3d_manual_175_en.pdf"
-      }
-    },
-    "panda": {
-      "name": "Panda",
-      "description": "Franka Emika Panda robot in the Iot Lab Salzburg on the central desk",
-      "properties": {
-        "specification": "https://s3-eu-central-1.amazonaws.com/franka-de-uploads-staging/uploads/2018/05/2018-05-datasheet-panda.pdf"
-      }
-    },
-    "pixtend": {
-      "name": "PiXtend",
-      "description": "PiXtend PLC including the conveyor belt in the Iot Lab Salzburg on the central desk",
-      "properties": {
-        "specification": "https://ecksteinimg.de/Datasheet/Dobot/Conveyor-Belt-Instruction.pdf"
-      }
-    },
-    "sigmatek": {
-      "name": "Sigmatek",
-      "description": "Sigmatek PLC as well as miscellaneous non-acting systems",
-      "properties": {
-        "specification": "https://www.sigmatek-automation.com/"
-      }
-    },
     "dtz-labor": {
       "name": "DTZ Labor",
       "description": "Labor room in Salzburg Research 2nd floor in which the dtz inventory is installed.",
       "properties": {
-        "specification": "https://www.sigmatek-automation.com/"
+        "specification": "https://www.dtz-salzburg.at/kollaborative-fertigung/"
       }
     }
   },
   "Sensors": {
-    "prusa3d_temp_sensor": {
-      "name": "prusa internal temp sensor",
-      "description": "Internal temperature sensor of the Prusa i3 3D Printer",
+    "air_sensor": {
+      "name": "bluSensor AIQ",
+      "description": "bluSensor that measures multiple air parameters.",
       "encodingType": "application/pdf",
-      "metadata": "https://www.prusa3d.com/downloads/manual/prusa3d_manual_175_en.pdf"
+      "metadata": "https://www.blusensor.com/air-quality-monitor/"
     },
-    "prusa3d_controller": {
-      "name": "prusa internal controller",
-      "description": "Derived Output from the internal controller of the Prusa i3 3D Printer",
+    "particle_sensor": {
+      "name": "bluSensor APM",
+      "description": "bluSensor that measures particles of various sizes in the air.",
       "encodingType": "application/pdf",
-      "metadata": "https://www.prusa3d.com/downloads/manual/prusa3d_manual_175_en.pdf"
-    },
-    "SCT-013": {
-      "name": "Split Core Current Transformer",
-      "description": "Split Core Current Transformer SCT-013 with up to 5A/1V, 3.5 mm cable",
-      "encodingType": "application/pdf",
-      "metadata": "https://datasheetspdf.com/pdf-down/S/C/T/SCT-013-005-ETC.pdf"
-    },
-    "dht11": {
-      "name": "DHT11",
-      "description": "DHT11 temperature and humidity sensor",
-      "encodingType": "application/pdf",
-      "metadata": "https://cdn-learn.adafruit.com/downloads/pdf/dht.pdf"
+      "metadata": "https://www.blusensor.com/"
     }
   },
   "Datastreams": {
-    "prusa3d.bed.temp.target": {
-      "name": "Target Bed Temperature Prusa",
-      "description": "Datastream for the target temperature of the Prusa 3D printer bed",
+    "hum": {
+      "name": "bluSensor AIQ humidity",
+      "description": "Relative humidity of the dtz lab''s air.",
       "observationType": "http://www.opengis.net/def/observationType/OGC-OM/2.0/OM_Measurement",
       "unitOfMeasurement": {
-        "name": "Degree Celsius",
-        "symbol": "degC",
-        "definition": "http://www.qudt.org/qudt/owl/1.0.0/unit/Instances.html#DegreeCelsius"
-      },
-      "ObservedProperty": {
-        "name": "Target Bed Temperature of the Prusa i3",
-        "description": "The desired temperature of the Prusa i3 printing bed",
-        "definition": "http://www.qudt.org/qudt/owl/1.0.0/quantity/Instances.html#AreaTemperature"
-      },
-      "Thing": "prusa",
-      "Sensor": "prusa3d_temp_sensor"
-    },
-    "prusa3d.bed.temp.actual": {
-      "name": "Actual Bed Temperature Prusa",
-      "description": "Datastream for the measured temperature of the Prusa 3D printer bed",
-      "observationType": "http://www.opengis.net/def/observationType/OGC-OM/2.0/OM_Measurement",
-      "unitOfMeasurement": {
-        "name": "Degree Celsius",
-        "symbol": "degC",
-        "definition": "http://www.qudt.org/qudt/owl/1.0.0/unit/Instances.html#DegreeCelsius"
-      },
-      "ObservedProperty": {
-        "name": "Actual Bed Temperature of the Prusa i3",
-        "description": "The measured temperature of the Prusa i3 printing bed",
-        "definition": "http://www.qudt.org/qudt/owl/1.0.0/quantity/Instances.html#AreaTemperature"
-      },
-      "Thing": "prusa",
-      "Sensor": "prusa3d_temp_sensor"
-    },
-    "prusa3d.tool0.temp.target": {
-      "name": "Target Nozzle Temperature Prusa",
-      "description": "Datastream for the target temperature of the Prusa 3D printer nozzle",
-      "observationType": "http://www.opengis.net/def/observationType/OGC-OM/2.0/OM_Measurement",
-      "unitOfMeasurement": {
-        "name": "Degree Celsius",
-        "symbol": "degC",
-        "definition": "http://www.qudt.org/qudt/owl/1.0.0/unit/Instances.html#DegreeCelsius"
-      },
-      "ObservedProperty": {
-        "name": "Target Nozzle Temperature of the Prusa i3",
-        "description": "The desired temperature of the Prusa i3 nozzle",
-        "definition": "http://www.qudt.org/qudt/owl/1.0.0/quantity/Instances.html#AreaTemperature"
-      },
-      "Thing": "prusa",
-      "Sensor": "prusa3d_temp_sensor"
-    },
-    "prusa3d.tool0.temp.actual": {
-      "name": "Actual Nozzle Temperature Prusa",
-      "description": "Datastream for the measured temperature of the Prusa 3D printer nozzle",
-      "observationType": "http://www.opengis.net/def/observationType/OGC-OM/2.0/OM_Measurement",
-      "unitOfMeasurement": {
-        "name": "Degree Celsius",
-        "symbol": "degC",
-        "definition": "http://www.qudt.org/qudt/owl/1.0.0/unit/Instances.html#DegreeCelsius"
-      },
-      "ObservedProperty": {
-        "name": "Actual Nozzle Temperature of the Prusa i3",
-        "description": "The measured temperature of the Prusa i3 nozzle",
-        "definition": "http://www.qudt.org/qudt/owl/1.0.0/quantity/Instances.html#AreaTemperature"
-      },
-      "Thing": "prusa",
-      "Sensor": "prusa3d_temp_sensor"
-    },
-    "prusa3d.progress.status": {
-      "name": "Processing information",
-      "description": "Datastream for the internal processings",
-      "observationType": "http://www.opengis.net/def/observationType/OGC-OM/2.0/OM_Observation",
-      "unitOfMeasurement": {
-        "name": "processing information",
-        "symbol": "srfg.prusa3d.processing",
-        "definition": "json-message"
-      },
-      "ObservedProperty": {
-        "name": "processing data",
-        "description": "processes run to perform a print (printing, slicing)",
-        "definition": "srfg.prusa3d.processing"
-      },
-      "Thing": "prusa",
-      "Sensor": "prusa3d_controller"
-    },
-    "prusa3d.mqtt.status": {
-      "name": "mqtt connection status",
-      "description": "Datastream for the mqtt network connection",
-      "observationType": "http://www.opengis.net/def/observationType/OGC-OM/2.0/OM_Observation",
-      "unitOfMeasurement": {
-        "name": "mqtt connection status",
-        "symbol": "srfg.prusa3d.mqtt",
-        "definition": "connection-status"
-      },
-      "ObservedProperty": {
-        "name": "network information",
-        "description": "mqtt network connection of the printer''s controller",
-        "definition": "srfg.prusa3d.mqtt"
-      },
-      "Thing": "prusa",
-      "Sensor": "prusa3d_controller"
-    },
-    "prusa3d.event.status": {
-      "name": "prusa events",
-      "description": "Datastream for printing events",
-      "observationType": "http://www.opengis.net/def/observationType/OGC-OM/2.0/OM_Observation",
-      "unitOfMeasurement": {
-        "name": "printing event",
-        "symbol": "srfg.prusa3d.event",
-        "definition": "json-message"
-      },
-      "ObservedProperty": {
-        "name": "event information",
-        "description": "events occurring while printing",
-        "definition": "srfg.prusa3d.event"
-      },
-      "Thing": "prusa",
-      "Sensor": "prusa3d_controller"
-    },
-    "temperature": {
-      "name": "IoT Labor Temperature",
-      "description": "Temperature of the IoT Labor of Salzburg Research",
-      "observationType": "http://www.opengis.net/def/observationType/OGC-OM/2.0/OM_Measurement",
-      "unitOfMeasurement": {
-        "name": "Degree Celsius",
-        "symbol": "degC",
-        "definition": "http://www.qudt.org/qudt/owl/1.0.0/unit/Instances.html#DegreeCelsius"
-      },
-      "ObservedProperty": {
-        "name": "IoT Labor Temperature",
-        "description": "Temperature of the IoT Labor, measured under the desk",
-        "definition": "http://www.qudt.org/qudt/owl/1.0.0/quantity/Instances.html#AreaTemperature"
-      },
-      "Thing": "dtz-labor",
-      "Sensor": "dht11"
-    },
-    "humidity": {
-      "name": "IoT Labor Humidity",
-      "description": "Relative Humidity of the IoT Labor of Salzburg Research",
-      "observationType": "http://www.opengis.net/def/observationType/OGC-OM/2.0/OM_Measurement",
-      "unitOfMeasurement": {
-        "name": "Percent",
+        "name": "percent",
         "symbol": "%",
-        "definition": ""
+        "definition": "0173-1#07-AAG357#001"
       },
       "ObservedProperty": {
-        "name": "IoT Labor Humidity",
-        "description": "Relative Humidity of the IoT Labor, measured under the desk",
-        "definition": "https://www.sciencedirect.com/topics/earth-and-planetary-sciences/relative-humidity"
+        "name": "bluSensor AIQ humidity",
+        "description": "Relative humidity of the air.",
+        "definition": "0173-1#02-AAZ092#001"
       },
       "Thing": "dtz-labor",
-      "Sensor": "dht11"
+      "Sensor": "air_sensor"
     },
-    "panda_current": {
-      "name": "Current of the Panda Robot",
-      "description": "Used current of the Panda Roboting System in the IoT Labor of Salzburg Research",
+    "tem": {
+      "name": "bluSensor AIQ temperature",
+      "description": "Temperature of the dtz lab''s air.",
       "observationType": "http://www.opengis.net/def/observationType/OGC-OM/2.0/OM_Measurement",
       "unitOfMeasurement": {
-        "name": "Ampere",
-        "symbol": "A",
-        "definition": "http://www.qudt.org/qudt/owl/1.0.0/unit/Instances.html#Ampere"
+        "name": "degree celsius",
+        "symbol": "\u00b0C",
+        "definition": "0173-1#02-BAE540#004"
       },
       "ObservedProperty": {
-        "name": "Current of the Panda Robot",
-        "description": "Current of the Panda Roboting System including the ROS PC and UPS, measured in the electrical distributor.",
-        "definition": "http://www.qudt.org/qudt/owl/1.0.0/quantity/index.html#ElectricCurrent"
+        "name": "bluSensor AIQ temperature",
+        "description": "Air temperature.",
+        "definition": "0173-1#02-BAE540#004"
       },
-      "Thing": "panda",
-      "Sensor": "SCT-013"
+      "Thing": "dtz-labor",
+      "Sensor": "air_sensor"
     },
-    "prusa_current": {
-      "name": "Current of the Prusa 3D printer",
-      "description": "Used current of the Prusa 3D printing System in the IoT Labor of Salzburg Research",
+    "dew": {
+      "name": "bluSensor AIQ dew point",
+      "description": "max. compressive dew point of the dtz lab''s air.",
       "observationType": "http://www.opengis.net/def/observationType/OGC-OM/2.0/OM_Measurement",
       "unitOfMeasurement": {
-        "name": "Ampere",
-        "symbol": "A",
-        "definition": "http://www.qudt.org/qudt/owl/1.0.0/unit/Instances.html#Ampere"
+        "name": "degree celsius",
+        "symbol": "\u00b0C",
+        "definition": "0173-1#02-AAH831#003"
       },
       "ObservedProperty": {
-        "name": "Current of the Prusa 3D printer",
-        "description": "Current of the Prusa 3D printing System including the printer and the octoprint server, measured in the electrical distributor.",
-        "definition": "http://www.qudt.org/qudt/owl/1.0.0/quantity/index.html#ElectricCurrent"
+        "name": "bluSensor AIQ dew point",
+        "description": "maximum degree of temperature, generated by pressure, at which a state of equilibrium of condensing and vaporizing water is reached on an object",
+        "definition": "0173-1#02-AAH831#003"
       },
-      "Thing": "prusa",
-      "Sensor": "SCT-013"
+      "Thing": "dtz-labor",
+      "Sensor": "air_sensor"
     },
-    "pixtend_current": {
-      "name": "Current of the PiXtend",
-      "description": "Used current of the PiXtend System in the IoT Labor of Salzburg Research",
+    "co2": {
+      "name": "bluSensor AIQ CO2 concentration",
+      "description": "Carbon dioxide concentration of the dtz lab''s air.",
       "observationType": "http://www.opengis.net/def/observationType/OGC-OM/2.0/OM_Measurement",
       "unitOfMeasurement": {
-        "name": "Ampere",
-        "symbol": "A",
-        "definition": "http://www.qudt.org/qudt/owl/1.0.0/unit/Instances.html#Ampere"
+        "name": "ppb",
+        "symbol": "/10^9",
+        "definition": "0173-1#07-AAK104#004"
       },
       "ObservedProperty": {
-        "name": "Current of the PiXtend",
-        "description": "Current of the PiXtend System including the conveyor belt, measured in the electrical distributor.",
-        "definition": "http://www.qudt.org/qudt/owl/1.0.0/quantity/index.html#ElectricCurrent"
+        "name": "bluSensor AIQ CO2 concentration",
+        "description": "Carbon dioxide concentration of the air.",
+        "definition": "0173-1#07-AAK104#004"
       },
-      "Thing": "pixtend",
-      "Sensor": "SCT-013"
+      "Thing": "dtz-labor",
+      "Sensor": "air_sensor"
     },
-    "sigmatek_current": {
-      "name": "Current of the Sigmatek PLC",
-      "description": "Used current of the Sigmatek PLC in the IoT Labor of Salzburg Research",
+    "tvoc": {
+      "name": "bluSensor AIQ air pollution",
+      "description": "Pollution of the dtz lab''s air.",
       "observationType": "http://www.opengis.net/def/observationType/OGC-OM/2.0/OM_Measurement",
       "unitOfMeasurement": {
-        "name": "Ampere",
-        "symbol": "A",
-        "definition": "http://www.qudt.org/qudt/owl/1.0.0/unit/Instances.html#Ampere"
+        "name": "ppb",
+        "symbol": "/10^9",
+        "definition": "0173-1#07-AAK104#004"
       },
       "ObservedProperty": {
-        "name": "Current of the Sigmatek PLC",
-        "description": "Current of the Sigmatek PLC including some Raspberry Pis, measured in the electrical distributor.",
-        "definition": "http://www.qudt.org/qudt/owl/1.0.0/quantity/index.html#ElectricCurrent"
+        "name": "bluSensor AIQ air pollution",
+        "description": "Pollution of the air.",
+        "definition": "0173-1#07-AAK104#004"
       },
-      "Thing": "sigmatek",
-      "Sensor": "SCT-013"
+      "Thing": "dtz-labor",
+      "Sensor": "air_sensor"
+    },
+    "pm1": {
+      "name": "bluSensor APM 1 \u00b5m concentration",
+      "description": "Concentration of particles of size 1 \u00b5m in the dtz lab''s air",
+      "observationType": "http://www.opengis.net/def/observationType/OGC-OM/2.0/OM_Measurement",
+      "unitOfMeasurement": {
+        "name": "microgram per cubic meter",
+        "symbol": "\u00b5g/m^3",
+        "definition": "0173-1#02-BAF510#002"
+      },
+      "ObservedProperty": {
+        "name": "bluSensor APM 1 \u00b5m concentration",
+        "description": "Concentration of particles of size 1 \u00b5m in the dtz lab''s air",
+        "definition": "0173-1#02-BAF510#002"
+      },
+      "Thing": "dtz-labor",
+      "Sensor": "particle_sensor"
+    },
+    "pm2": {
+      "name": "bluSensor APM 2.5 \u00b5m concentration",
+      "description": "Concentration of particles of size 2.5 \u00b5m in the dtz lab''s air",
+      "observationType": "http://www.opengis.net/def/observationType/OGC-OM/2.0/OM_Measurement",
+      "unitOfMeasurement": {
+        "name": "microgram per cubic meter",
+        "symbol": "\u00b5g/m^3",
+        "definition": "0173-1#02-BAF510#002"
+      },
+      "ObservedProperty": {
+        "name": "bluSensor APM 2.5 \u00b5m concentration",
+        "description": "Concentration of particles of size 2.5 \u00b5m in the dtz lab''s air",
+        "definition": "0173-1#02-BAF510#002"
+      },
+      "Thing": "dtz-labor",
+      "Sensor": "particle_sensor"
+    },
+    "pm4": {
+      "name": "bluSensor APM 4 \u00b5m concentration",
+      "description": "Concentration of particles of size 4 \u00b5m in the dtz lab''s air",
+      "observationType": "http://www.opengis.net/def/observationType/OGC-OM/2.0/OM_Measurement",
+      "unitOfMeasurement": {
+        "name": "microgram per cubic meter",
+        "symbol": "\u00b5g/m^3",
+        "definition": "0173-1#02-BAF510#002"
+      },
+      "ObservedProperty": {
+        "name": "bluSensor APM 4 \u00b5m concentration",
+        "description": "Concentration of particles of size 4 \u00b5m in the dtz lab''s air",
+        "definition": "0173-1#02-BAF510#002"
+      },
+      "Thing": "dtz-labor",
+      "Sensor": "particle_sensor"
+    },
+    "pm10": {
+      "name": "bluSensor APM 10 \u00b5m concentration",
+      "description": "Concentration of particles of size 10 \u00b5m in the dtz lab''s air",
+      "observationType": "http://www.opengis.net/def/observationType/OGC-OM/2.0/OM_Measurement",
+      "unitOfMeasurement": {
+        "name": "microgram per cubic meter",
+        "symbol": "\u00b5g/m^3",
+        "definition": "0173-1#02-BAF510#002"
+      },
+      "ObservedProperty": {
+        "name": "bluSensor APM 10 \u00b5m concentration",
+        "description": "Concentration of particles of size 10 \u00b5m in the dtz lab''s air",
+        "definition": "0173-1#02-BAF510#002"
+      },
+      "Thing": "dtz-labor",
+      "Sensor": "particle_sensor"
     }
   }
 }

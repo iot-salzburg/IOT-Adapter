@@ -2,7 +2,7 @@
 
 (This is a productive branch of the MQTT-Adapter.)
 
-Connecting MQTT services with the Messaging System.
+Connecting BluSensor devices to the Messaging System.
 This component subscribes to topics from the Internet of Things
 messaging system MQTT and forwards them to the messaging system which is based on
 Apache Kafka.
@@ -54,7 +54,7 @@ Now, the client can be imported and used in `mqtt-adapter.py` with:
     from client.digital_twin_client import DigitalTwinClient
 
     # Set the configs, create a new Digital Twin Instance and register file structure
-    config = {"client_name": "mqtt-adapter",
+    config = {"client_name": "bluSensor-adapter",
               "system": "at.srfg.iot.dtz",
               "gost_servers": "192.168.48.71:8082",
               "kafka_bootstrap_servers": "192.168.48.71:9092,192.168.48.72:9092,192.168.48.73:9092,192.168.48.74:9092,192.168.48.75:9092"}
