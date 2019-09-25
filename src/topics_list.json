@@ -1,7 +1,6 @@
 {
     "topics": [
         "iot/blusensor/v1/gateway/246F28432BB6/thing/24:6F:28:43:2B:B6/data",
-        "iot/blusensor/v1/gateway/246F28432CB6/thing/24:6F:28:43:2C:B6/data",
-        "iot/type/blusensor/id/886B0F275701/evt/air/fmt/json"
+        "iot/blusensor/v1/gateway/246F28432CB6/thing/24:6F:28:43:2C:B6/data"
     ]
 }

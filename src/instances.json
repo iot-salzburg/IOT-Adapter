@@ -109,8 +109,8 @@
       "Sensor": "air_sensor"
     },
     "pm1": {
-      "name": "bluSensor APM 1 \u00b5m concentration",
-      "description": "Concentration of particles of size 1 \u00b5m in the dtz lab''s air",
+      "name": "bluSensor APM 1 pm concentration",
+      "description": "Concentration of particles of size 1 pm in the dtz lab''s air",
       "observationType": "http://www.opengis.net/def/observationType/OGC-OM/2.0/OM_Measurement",
       "unitOfMeasurement": {
         "name": "microgram per cubic meter",
@@ -118,16 +118,16 @@
         "definition": "0173-1#02-BAF510#002"
       },
       "ObservedProperty": {
-        "name": "bluSensor APM 1 \u00b5m concentration",
-        "description": "Concentration of particles of size 1 \u00b5m in the dtz lab''s air",
+        "name": "bluSensor APM 1 pm concentration",
+        "description": "Concentration of particles of size 1 pm in the dtz lab''s air",
         "definition": "0173-1#02-BAF510#002"
       },
       "Thing": "dtz-labor",
       "Sensor": "particle_sensor"
     },
     "pm2": {
-      "name": "bluSensor APM 2.5 \u00b5m concentration",
-      "description": "Concentration of particles of size 2.5 \u00b5m in the dtz lab''s air",
+      "name": "bluSensor APM 2.5 pm concentration",
+      "description": "Concentration of particles of size 2.5 pm in the dtz lab''s air",
       "observationType": "http://www.opengis.net/def/observationType/OGC-OM/2.0/OM_Measurement",
       "unitOfMeasurement": {
         "name": "microgram per cubic meter",
@@ -135,16 +135,16 @@
         "definition": "0173-1#02-BAF510#002"
       },
       "ObservedProperty": {
-        "name": "bluSensor APM 2.5 \u00b5m concentration",
-        "description": "Concentration of particles of size 2.5 \u00b5m in the dtz lab''s air",
+        "name": "bluSensor APM 2.5 pm concentration",
+        "description": "Concentration of particles of size 2.5 pm in the dtz lab''s air",
         "definition": "0173-1#02-BAF510#002"
       },
       "Thing": "dtz-labor",
       "Sensor": "particle_sensor"
     },
     "pm4": {
-      "name": "bluSensor APM 4 \u00b5m concentration",
-      "description": "Concentration of particles of size 4 \u00b5m in the dtz lab''s air",
+      "name": "bluSensor APM 4 pm concentration",
+      "description": "Concentration of particles of size 4 pm in the dtz lab''s air",
       "observationType": "http://www.opengis.net/def/observationType/OGC-OM/2.0/OM_Measurement",
       "unitOfMeasurement": {
         "name": "microgram per cubic meter",
@@ -152,16 +152,16 @@
         "definition": "0173-1#02-BAF510#002"
       },
       "ObservedProperty": {
-        "name": "bluSensor APM 4 \u00b5m concentration",
-        "description": "Concentration of particles of size 4 \u00b5m in the dtz lab''s air",
+        "name": "bluSensor APM 4 pm concentration",
+        "description": "Concentration of particles of size 4 pm in the dtz lab''s air",
         "definition": "0173-1#02-BAF510#002"
       },
       "Thing": "dtz-labor",
       "Sensor": "particle_sensor"
     },
     "pm10": {
-      "name": "bluSensor APM 10 \u00b5m concentration",
-      "description": "Concentration of particles of size 10 \u00b5m in the dtz lab''s air",
+      "name": "bluSensor APM 10 pm concentration",
+      "description": "Concentration of particles of size 10 pm in the dtz lab''s air",
       "observationType": "http://www.opengis.net/def/observationType/OGC-OM/2.0/OM_Measurement",
       "unitOfMeasurement": {
         "name": "microgram per cubic meter",
@@ -169,8 +169,8 @@
         "definition": "0173-1#02-BAF510#002"
       },
       "ObservedProperty": {
-        "name": "bluSensor APM 10 \u00b5m concentration",
-        "description": "Concentration of particles of size 10 \u00b5m in the dtz lab''s air",
+        "name": "bluSensor APM 10 pm concentration",
+        "description": "Concentration of particles of size 10 pm in the dtz lab''s air",
         "definition": "0173-1#02-BAF510#002"
       },
       "Thing": "dtz-labor",

@@ -104,9 +104,6 @@ def on_message(client, userdata, msg):
     :param msg: Incoming raw MQTT message
     :return:
     """
-
-    logger.debug("Received new data with topic: {}".format(msg.topic))
-    data = json.loads(msg.payload.decode("utf-8"))
     # payload: print(json.dumps(data, indent=2))
     # {
     #     "mac": "24:6F:28:43:2C:B6",
@@ -138,48 +135,49 @@ def on_message(client, userdata, msg):
     #     "pm10": 1.8
     # }
 
-    logger.debug(json.dumps(data, indent=2))
-    if msg.topic not in MQTT_TOPICS:
-        MQTT_TOPICS.append(msg.topic)
-        with open(topics_list_file, "w") as topics:
-            json.dump({"topics": sorted(MQTT_TOPICS)}, topics, indent=4, sort_keys=True)
-            logger.info("Found new mqtt topic: {} and saved it to file".format(msg.topic))
+    logger.debug("Received new data with topic: {}".format(msg.topic))
+    data = json.loads(msg.payload.decode("utf-8"))
+    # logger.debug(json.dumps(data, indent=2))
+    try:
+        if msg.topic not in MQTT_TOPICS:
+            MQTT_TOPICS.append(msg.topic)
+            with open(topics_list_file, "w") as topics:
+                json.dump({"topics": sorted(MQTT_TOPICS)}, topics, indent=4, sort_keys=True)
+                logger.info("Found new mqtt topic: {} and saved it to file".format(msg.topic))
 
-    if data.get("mac") == "24:6F:28:43:2C:B6":
-        send_temp_sensor(data)
-    elif data.get("mac") == "24:6F:28:43:2B:B6":
-        send_particle_sensor(data)
-    else:
-        logger.warning("Unknown data-type: topic: {}\npayload: {}".format(msg.topic, msg.payload))
+        if data.get("boot"):
+            logger.info("Found booted device with mac '{}'".format(data.get("mac")))
+            return
 
+        message = get_basic_message(data)
+        if data.get("mac") == "24:6F:28:43:2C:B6":
+            logger.debug("  sending air data")
+            sense_map = {"hum": "humidity",
+                         "tem": "temperature",
+                         "dew": "dew point",
+                         "co2": "CO2 concentration",
+                         "tvoc": "VOC concentration"}
+        elif data.get("mac") == "24:6F:28:43:2B:B6":
+            logger.debug("  sending particle data")
+            sense_map = {"pm1": "particle-conc. 1pm",
+                         "pm2": "particle-conc. 2.5pm",
+                         "pm4": "particle-conc. 4pm",
+                         "pm10": "particle-conc. 10pm"}
+        else:
+            logger.warning("Unknown data-type: topic: {}\npayload: {}".format(msg.topic, msg.payload))
+            return
 
-def send_temp_sensor(data):
-    message = get_basic_message(data)
-    sense_map = {"hum": "humidity",
-                 "tem": "temperature",
-                 "dew": "dew point",
-                 "co2": "CO2 concentration",
-                 "tvoc": "VOC concentration"}
-    logger.debug("  sending air data")
-    for quant, q_name in sense_map.items():
-        # message["Datastream"]["name"] = data["name"] + " " + q_name
-        # message["result"] = float(data.get(quant))
-        logger.info("Sending '{}' to Panta Rhei".format(data["name"] + " " + q_name))
-        pr_client.produce(quantity=quant, result=float(data.get(quant)), timestamp=message["phenomenonTime"])
+        for quant, q_name in sense_map.items():
+            # message["Datastream"]["name"] = data.get("name") + " " + q_name
+            # message["result"] = float(data.get(quant))
+            # logger.info("{} = {}".format(message["Datastream"]["name"], message["result"]))
+            logger.info("Sending '{} = {}' to Panta Rhei".format(data.get("name") + " " + q_name, float(data.get(quant))))
+            pr_client.produce(quantity=quant, result=float(data.get(quant)), timestamp=data.get("ts_unix"))
 
-
-def send_particle_sensor(data):
-    message = get_basic_message(data)
-    sense_map = {"pm1": "particle-conc. 1µm",
-                 "pm2": "particle-conc. 2µm",
-                 "pm4": "particle-conc. 4µm",
-                 "pm10": "particle-conc. 10µm"}
-    logger.debug("  sending particle data")
-    for quant, q_name in sense_map.items():
-        # message["Datastream"]["name"] = data["name"] + " " + q_name
-        # message["result"] = float(data.get(quant))
-        logger.info("Sending '{}' to Panta Rhei".format(data["name"] + " " + q_name))
-        pr_client.produce(quantity=quant, result=float(data.get(quant)), timestamp=message["phenomenonTime"])
+    except Exception as e:
+        logger.warning("Unexpected exception occured: {}".format(e))
+        logger.warning(e.with_traceback())
+        logger.warning(json.dumps(data, indent=2))
 
 
 def get_basic_message(data):
@@ -188,7 +186,7 @@ def get_basic_message(data):
     try:
         message["phenomenonTime"] = datetime.utcfromtimestamp(data["ts_unix"]).replace(tzinfo=pytz.UTC).isoformat()
     except:
-        logger.warning("couldn't parse datetime: {}".format(data["ts_unix"]))
+        logger.warning("couldn't parse datetime: {}".format(data))
         message["phenomenonTime"] = datetime.utcnow().replace(tzinfo=pytz.UTC).isoformat()
     message["resultTime"] = datetime.utcnow().replace(tzinfo=pytz.UTC).isoformat()
     return message
