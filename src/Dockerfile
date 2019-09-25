@@ -26,6 +26,10 @@ RUN pip install -r requirements.txt
 RUN mkdir /src
 ADD . /src
 
+RUN git clone https://github.com/iot-salzburg/panta_rhei /src/panta_rhei > /dev/null 2>&1 || echo "Repo already exists" && \
+    git -C /src/panta_rhei/ checkout client_0v3 && \
+    git -C /src/panta_rhei/ pull
+
 # setup proper configuration
 ENV PYTHONPATH /
 WORKDIR /src
