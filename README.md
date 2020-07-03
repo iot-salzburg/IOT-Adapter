@@ -38,7 +38,7 @@ version **0.11.6**
     
 ```bash
 git clone https://github.com/iot-salzburg/panta_rhei src/panta_rhei > /dev/null 2>&1 || echo "Repo already exists"
-git -C src/panta_rhei/ checkout srfg-digitaltwin
+git -C src/panta_rhei/ checkout client_0v3
 git -C src/panta_rhei/ pull
 ```
 
