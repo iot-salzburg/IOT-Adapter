@@ -2,19 +2,20 @@ version: '3.4'
 
 services:
   adapter:
-    image: 127.0.0.1:5001/src
+    image: 127.0.0.1:5001/mqtt-adapter
     build: src/
     networks:
       - mqtt-adapter
     environment:
       # MQTT config
-      MQTT_BROKER: "192.168.48.71"
+      MQTT_BROKER: "192.168.48.72"
       MQTT_SUBSCRIBED_TOPICS: "prusa3d/#,sensorpi/#,octoprint/#"
       # Panta Rhei configuration
       CLIENT_NAME: "mqtt-adapter"
       SYSTEM_NAME: "at.srfg.iot.dtz"
-      SENSORTHINGS_HOST: "192.168.48.71:8082"
-      BOOTSTRAP_SERVERS: "192.168.48.71:9092,192.168.48.72:9092,192.168.48.73:9092,192.168.48.74:9092,192.168.48.75:9092"
+      SENSORTHINGS_HOST: "192.168.48.72:8082"
+#      BOOTSTRAP_SERVERS: "192.168.48.71:9092,192.168.48.72:9092,192.168.48.73:9092,192.168.48.74:9092,192.168.48.75:9092"
+      BOOTSTRAP_SERVERS: "192.168.48.72:9092,192.168.48.73:9092,192.168.48.74:9092,192.168.48.75:9092"
     deploy:
       placement:
         constraints: [node.role == worker]
