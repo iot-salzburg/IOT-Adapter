@@ -31,7 +31,9 @@ RUN ls /src/panta_rhei/README.md  > /dev/null 2>&1  \
   || (echo "Panta Rhei not found, cloning repository" \
     && git clone https://github.com/iot-salzburg/panta_rhei src/panta_rhei) \
   && cd /src/panta_rhei \
-  && git pull 
+    git -C /src/panta_rhei/ checkout client_1v0 && \
+    git -C /src/panta_rhei/ pull
+
 
 # setup proper configuration
 ENV PYTHONPATH /
