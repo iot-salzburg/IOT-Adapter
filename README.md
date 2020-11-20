@@ -6,7 +6,7 @@ Apache Kafka.
 Therefore both services must be running:
 * [MQTT-broker](https://github.com/iot-salzburg/dtz_mqtt-adapter/tree/master/setup_broker) in the same repository.
 * [panta-rhei stack](https://github.com/iot-salzburg/panta_rhei)
-
+ 
 
 The MQTT Adapter is based on the components:
 * Paho-MQTT Messaging Client, [paho.mqtt](https://pypi.python.org/pypi/paho-mqtt/1.3.1) version **1.4.0**

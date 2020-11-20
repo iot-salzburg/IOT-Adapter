@@ -4,8 +4,7 @@ services:
   adapter:
     image: 127.0.0.1:5001/src
     build: src/
-    networks:
-      - mqtt-adapter
+    network_mode: host
     environment:
       # MQTT config
       MQTT_BROKER: "192.168.48.71"
@@ -28,7 +27,3 @@ services:
         delay: 10s
       restart_policy:
         condition: on-failure
-
-# Network
-networks:
-  mqtt-adapter:
