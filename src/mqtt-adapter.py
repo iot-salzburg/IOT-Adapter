@@ -35,6 +35,7 @@ __status__ = "Development"
 
 MQTT_BROKER = os.environ.get("MQTT_BROKER", "192.168.48.71")
 SUBSCRIBED_TOPICS = os.environ.get("MQTT_SUBSCRIBED_TOPICS", "prusa3d/#,sensorpi/#,octoprint/#").split(",")
+verbose = False
 
 # Panta Rhei configuration
 config = {"client_name": os.environ.get("CLIENT_NAME", "mqtt-adapter"),
@@ -98,7 +99,8 @@ def on_message(client, userdata, msg):
     :param msg: Incoming raw MQTT message
     :return:
     """
-    print("Received new data with topic: {} and values: {}".format(msg.topic, msg.payload))
+    if verbose:
+        print("Received new data with topic: {} and values: {}".format(msg.topic, msg.payload))
 
     # kafka_logger("New MQTT message: {}, {}".format(msg.topic, "-"), level="debug")  # msg.payload))
     if msg.topic not in MQTT_TOPICS:
