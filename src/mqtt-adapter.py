@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 #  -*- coding: utf-8 -*-
 
-"""src.py: This module fetches heterogenious data from the Iot-Lab's MQTT_BORKER
-(3D printer data previously bundled on node-red), converts it into the canonical dataformat as
+"""src.py: This module fetches heterogeneous data from the Iot-Lab's MQTT_BORKER
+(3D printer data previously bundled on node-red), converts it into the canonical data format as
 specified in SensorThings and sends it in the Kafka message Bus.
 If MQTT doesn't work, make sure that
 1) you are listening on port 1883 (cmd: netstat -a)
@@ -21,43 +21,32 @@ from datetime import datetime
 import paho.mqtt.client as mqtt
 
 # confluent_kafka is based on librdkafka, details in requirements.txt
-sys.path.append(os.sep.join(os.getcwd().split(os.sep)[:-1]))
-sys.path.append("/src/panta_rhei/")
-from panta_rhei.client.digital_twin_client import DigitalTwinClient
+try:
+    from .panta_rhei.client.digital_twin_client import DigitalTwinClient
+except ImportError:
+    from panta_rhei.client.digital_twin_client import DigitalTwinClient
 
 
 __author__ = "Salzburg Research"
-__version__ = "2.2"
-__date__ = "23 May 2019"
+__version__ = "2.3"
+__date__ = "20 November 2020"
 __email__ = "christoph.schranz@salzburgresearch.at"
 __status__ = "Development"
 
-# MQTT_BROKER = "il050.salzburgresearch.at"
 MQTT_BROKER = os.environ.get("MQTT_BROKER", "192.168.48.71")
 SUBSCRIBED_TOPICS = os.environ.get("MQTT_SUBSCRIBED_TOPICS", "prusa3d/#,sensorpi/#,octoprint/#").split(",")
 
 # Panta Rhei configuration
-CLIENT_NAME = os.environ.get("CLIENT_NAME", "mqtt-adapter")
-SYSTEM_NAME = os.environ.get("SYSTEM_NAME", "test-topic")  # "at.srfg.iot.dtz"
-SENSORTHINGS_HOST = os.environ.get("SENSORTHINGS_HOST", "192.168.48.71:8082")
-BOOTSTRAP_SERVERS = os.environ.get("BOOTSTRAP_SERVERS", "192.168.48.71:9092,192.168.48.72:9092,192.168.48.73:9092,192.168.48.74:9092,192.168.48.75:9092")
+config = {"client_name": os.environ.get("CLIENT_NAME", "mqtt-adapter"),
+          "system": os.environ.get("SYSTEM_NAME", "test-topic"),  # "at.srfg.iot.dtz" in docker-compose env
+          "gost_servers": os.environ.get("SENSORTHINGS_HOST", "192.168.48.71:8082"),
+          "kafka_bootstrap_servers": os.environ.get("BOOTSTRAP_SERVERS",
+                                                    "192.168.48.71:9092,192.168.48.71:9093,192.168.48.71:9094")
+          }
+# load files relative to this file
+dirname = os.path.dirname(os.path.abspath(__file__))
+INSTANCES = os.path.join(dirname, "instances.json")
 
-# # kafka parameters
-# # topics and servers should be of the form: "topic1,topic2,..."
-# KAFKA_TOPIC_metric = "dtz.sensorthings"
-# KAFKA_TOPIC_logging = "dtz.logging"
-# BOOTSTRAP_SERVERS = '192.168.48.81:9092,192.168.48.82:9092,192.168.48.83:9092'  # ,192.168.48.83:9095'
-# KAFKA_GROUP_ID = "mqtt-adapter"
-#
-# # The mapping between incoming and outgoing metrics is defined by
-# # The mapping between incoming and outgoing metrics is defined by
-# # the json file located on:
-# dir_path = os.path.dirname(os.path.realpath(__file__))
-# datastream_file = os.path.join(dir_path, "datastreams.json")
-#
-# with open(datastream_file) as ds_file:
-#     DATASTREAM_MAPPING = json.load(ds_file)
-# Unit here ******************************************************
 
 
 def define_mqtt_statemachine():
@@ -157,6 +146,7 @@ def send_sensorpi_message(msg):
     # print("Quantity: {}, payload: {}".format(sensorpi_mapping[msg.topic], msg.payload.decode("utf-8")))
     pr_client.produce(quantity=sensorpi_mapping[msg.topic], result=msg.payload.decode("utf-8"))
 
+
 def send_prusa3d_temperature(msg):
     payload = json.loads(msg.payload.decode("utf-8"))
 
@@ -210,19 +200,12 @@ if __name__ == '__main__':
     filename = inspect.getframeinfo(inspect.currentframe()).filename
     dirname = os.path.dirname(os.path.abspath(filename))
     topics_list_file = os.path.join(dirname, "topics_list.json")
-    INSTANCES = os.path.join(dirname, "instances.json")
-    MAPPINGS = os.path.join(dirname, "ds-mappings.json")
     with open(topics_list_file) as topics_file:
         MQTT_TOPICS = json.load(topics_file)["topics"]
 
-    config = {"client_name": CLIENT_NAME,
-              "system": SYSTEM_NAME,
-              "kafka_bootstrap_servers": BOOTSTRAP_SERVERS,
-              "gost_servers": SENSORTHINGS_HOST}
-
     pr_client = DigitalTwinClient(**config)
-    pr_client.register_new(instance_file=INSTANCES)
-    # pr_client.register_existing(mappings_file=MAPPINGS)
+    pr_client.logger.info("Main: Starting client.")
+    pr_client.register(instance_file=INSTANCES)
 
     logger.info("Configured the Panta Rhei Client")
     define_mqtt_statemachine()
