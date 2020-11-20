@@ -8,10 +8,10 @@ services:
     ports:
       - "1883:1883"
       - "9001:9001"
-    volumes:
-      - /mnt/glusterfs/dtz/mqtt/config:/mosquitto/config
-      - /mnt/glusterfs/dtz/mqtt/data:/mosquitto/data
-      - /mnt/glusterfs/dtz/mqtt/log:/mosquitto/log
+#    volumes:
+#      - /mnt/glusterfs/dtz/mqtt/config:/mosquitto/config
+#      - /mnt/glusterfs/dtz/mqtt/data:/mosquitto/data
+#      - /mnt/glusterfs/dtz/mqtt/log:/mosquitto/log
     networks:
       - mqtt-network
     deploy:
