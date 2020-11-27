@@ -4,17 +4,17 @@ services:
   adapter:
     image: 127.0.0.1:5001/src
     build: src/
+    network_mode: host
     environment:
       # MQTT config
       MQTT_BROKER: "broker.blusensor.com"
       MQTT_PORT: 7883
       MQTT_SUBSCRIBED_TOPICS: "iot/blusensor/v1/gateway/246F28432BB6/thing/24:6F:28:43:2B:B6/data,iot/blusensor/v1/gateway/246F28432CB6/thing/24:6F:28:43:2C:B6/data"
       # Panta Rhei configuration
-      CLIENT_NAME: "bluSensor-adapter"
-#      SYSTEM_NAME: "test-topic"
+      CLIENT_NAME: "mqtt-adapter"
       SYSTEM_NAME: "at.srfg.iot.dtz"
       SENSORTHINGS_HOST: "192.168.48.71:8082"
-      BOOTSTRAP_SERVERS: "192.168.48.71:9092,192.168.48.72:9092,192.168.48.73:9092,192.168.48.74:9092,192.168.48.75:9092"
+      BOOTSTRAP_SERVERS: "192.168.48.71:9092,192.168.48.71:9093,192.168.48.71:9094"
     deploy:
       placement:
         constraints: [node.role == worker]

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 #  -*- coding: utf-8 -*-
 
-"""src.py: This module fetches heterogenious data from the Iot-Lab's MQTT_BORKER
+"""src.py: This module fetches heterogeneous data from bluSensor's MQTT_BORKER
 (3D printer data previously bundled on node-red), converts it into the canonical dataformat as
 specified in SensorThings and sends it in the Kafka message Bus.
 If MQTT doesn't work, make sure that
@@ -27,8 +27,8 @@ from src.panta_rhei.client.digital_twin_client import DigitalTwinClient
 
 
 __author__ = "Salzburg Research"
-__version__ = "2.2"
-__date__ = "23 September 2019"
+__version__ = "2.3"
+__date__ = "27 November 2020"
 __email__ = "christoph.schranz@salzburgresearch.at"
 __status__ = "Development"
 
@@ -42,11 +42,15 @@ def_topics = ",".join(["iot/blusensor/v1/gateway/246F28432BB6/thing/24:6F:28:43:
                        "iot/blusensor/v1/gateway/246F28432BB6/thing/24:6F:28:43:2C:B6/data"])
 SUBSCRIBED_TOPICS = os.environ.get("MQTT_SUBSCRIBED_TOPICS", def_topics).split(",")
 
+verbose = True
+
 # Panta Rhei configuration
-CLIENT_NAME = os.environ.get("CLIENT_NAME", "bluSensor-adapter")
-SYSTEM_NAME = os.environ.get("SYSTEM_NAME", "test-topic")  # "at.srfg.iot.dtz"  # set in docker-compose.yml
-SENSORTHINGS_HOST = os.environ.get("SENSORTHINGS_HOST", "192.168.48.71:8082")
-BOOTSTRAP_SERVERS = os.environ.get("BOOTSTRAP_SERVERS", "192.168.48.71:9092,192.168.48.72:9092,192.168.48.73:9092,192.168.48.74:9092,192.168.48.75:9092")
+config = {"client_name": os.environ.get("CLIENT_NAME", "bluSensor-adapter"),
+          "system": os.environ.get("SYSTEM_NAME", "test-system"),  # "at.srfg.iot.dtz" in docker-compose env
+          "gost_servers": os.environ.get("SENSORTHINGS_HOST", "192.168.48.71:8082"),
+          "kafka_bootstrap_servers":os.environ.get("BOOTSTRAP_SERVERS",
+                                                   "192.168.48.71:9092,192.168.48.71:9093,192.168.48.71:9094")
+          }
 
 logger = logging.getLogger("bluSensor-Adapter")
 logger.setLevel(logging.DEBUG)
@@ -137,7 +141,9 @@ def on_message(client, userdata, msg):
 
     logger.debug("Received new data with topic: {}".format(msg.topic))
     data = json.loads(msg.payload.decode("utf-8"))
-    # logger.debug(json.dumps(data, indent=2))
+    if verbose:
+        logger.info(json.dumps(data, indent=2))
+
     try:
         if msg.topic not in MQTT_TOPICS:
             MQTT_TOPICS.append(msg.topic)
@@ -206,13 +212,8 @@ if __name__ == '__main__':
     with open(topics_list_file) as topics_file:
         MQTT_TOPICS = json.load(topics_file).get("topics", list())
 
-    config = {"client_name": CLIENT_NAME,
-              "system": SYSTEM_NAME,
-              "kafka_bootstrap_servers": BOOTSTRAP_SERVERS,
-              "gost_servers": SENSORTHINGS_HOST}
-
     pr_client = DigitalTwinClient(**config)
-    pr_client.register_new(instance_file=INSTANCES)
+    pr_client.register(instance_file=INSTANCES)
 
     logger.info("Configured the Panta Rhei Client")
 
