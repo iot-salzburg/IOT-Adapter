@@ -14,6 +14,7 @@ services:
 #      - /mnt/glusterfs/dtz/mqtt/log:/mosquitto/log
     networks:
       - mqtt-network
+    restart: always
     deploy:
       placement:
         constraints: [node.role == worker]
