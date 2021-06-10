@@ -14,6 +14,7 @@ services:
       SYSTEM_NAME: "at.srfg.iot.dtz"
       SENSORTHINGS_HOST: "192.168.48.71:8082"
       BOOTSTRAP_SERVERS: "192.168.48.71:9092,192.168.48.71:9093,192.168.48.71:9094"
+    restart: always
     deploy:
       placement:
         constraints: [node.role == worker]
